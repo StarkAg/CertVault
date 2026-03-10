@@ -1,0 +1,3 @@
+# Force Node 20 for Supabase and Vite (Nixpacks reads this at build time)
+[variables]
+NIXPACKS_NODE_VERSION = "20"

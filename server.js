@@ -98,9 +98,11 @@ app.all('/api/certvault', async (req, res) => {
 const distPath = join(__dirname, 'dist');
 app.use(express.static(distPath, { index: false }));
 
+// SPA fallback: serve index.html for non-API, non-file routes
 app.get('*', (req, res) => {
   const indexFile = join(distPath, 'index.html');
   if (fs.existsSync(indexFile)) {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', 'no-cache');
     res.sendFile(indexFile);
   } else {
@@ -110,6 +112,18 @@ app.get('*', (req, res) => {
 
 const server = http.createServer(app);
 const port = Number(PORT) || 3001;
+
+// Startup: verify dist exists (helps debug white screen in production)
+try {
+  const idx = join(distPath, 'index.html');
+  const assetsDir = join(distPath, 'assets');
+  const hasIndex = fs.existsSync(idx);
+  const hasAssets = fs.existsSync(assetsDir) && fs.readdirSync(assetsDir).length > 0;
+  console.log(`[CertVault] dist check: index=${hasIndex}, assets=${hasAssets}`);
+} catch (e) {
+  console.warn('[CertVault] dist check failed:', e.message);
+}
+
 server.listen(port, '0.0.0.0', () => {
   console.log(`[CertVault] Server running at http://0.0.0.0:${port}`);
 });

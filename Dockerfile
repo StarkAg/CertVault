@@ -26,6 +26,7 @@ COPY --from=builder /app/dist ./dist
 COPY server.js ./
 COPY api ./api
 COPY lib ./lib
+COPY convex ./convex
 
 ENV NODE_ENV=production
 EXPOSE 3000

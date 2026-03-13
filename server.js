@@ -98,8 +98,12 @@ app.all('/api/certvault', async (req, res) => {
 const distPath = join(__dirname, 'dist');
 app.use(express.static(distPath, { index: false }));
 
-// SPA fallback: serve index.html for non-API, non-file routes
+// SPA fallback: serve index.html only for non-asset routes (avoid sending HTML for /assets/* → wrong MIME)
 app.get('*', (req, res) => {
+  if (req.path.startsWith('/assets/')) {
+    res.status(404).set('Content-Type', 'text/plain').send('Asset not found. Redeploy to refresh.');
+    return;
+  }
   const indexFile = join(distPath, 'index.html');
   if (fs.existsSync(indexFile)) {
     res.setHeader('Content-Type', 'text/html; charset=utf-8');

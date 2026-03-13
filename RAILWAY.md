@@ -2,6 +2,13 @@
 
 The **“CertVault server misconfigured. Missing environment variables”** message means the app is missing required env vars. Set them and redeploy.
 
+## Build & deploy
+
+- **Build command** must be **`npm ci && npm run build`** (or `npm install && npm run build`) so that `dist/` and `dist/assets/` are produced. This is set in `railway.toml`; if you override the build in the Railway dashboard, keep this command.
+- **Start command**: **`node server.js`** (or `npm start`).
+- If the site loads but CSS/JS fail with **"MIME type 'text/html'"** or **404/500 on `/assets/...`**, the front-end build did not run or `dist/` is missing in the deployed image. Check the **build logs** and confirm the build step runs and finishes without errors.
+- For custom domain **certvault.gradex.bond**: set **`PUBLIC_URL=https://certvault.gradex.bond`** and add that origin to **Redirect URLs** in Supabase (see below).
+
 ## Required variables (must set)
 
 Add these in **Railway → your service → Variables** (or **Settings → Variables**):
@@ -29,3 +36,18 @@ Without this, login, signup, events, and certificates will not work.
 4. For production, run **`npx convex deploy`** and use the production deployment URL as **CONVEX_URL** on Railway.
 
 **Full PDF generation:** Deploy the **certgen-service** (same repo, root directory `certgen-service`) and set its Cloudinary vars. Then set **CERTGEN_SERVICE_URL** on certvault-web to the certgen service URL. See `certgen-service/README.md`.
+
+---
+
+## Supabase Auth (magic link)
+
+In **Supabase Dashboard** → your project → **Authentication** → **URL Configuration**:
+
+1. **Site URL**  
+   The default redirect URL when one isn’t specified or doesn’t match the allow list. Also used in email templates. No wildcards.  
+   Set to your app’s root, e.g. **`https://certvault.gradex.bond`**.
+
+2. **Redirect URLs** (allow list)  
+   Add every URL that auth may redirect to after sign-in (exact match). For magic link you need:
+   - **`https://certvault.gradex.bond/auth/callback`** (production)
+   - **`http://localhost:5174/auth/callback`** (local dev)

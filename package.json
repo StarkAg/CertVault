@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "node scripts/check-supabase-env.js && vite build",
     "preview": "vite preview",
     "server": "node server.js",
     "start": "node server.js",

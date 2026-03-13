@@ -38,7 +38,7 @@ export default function CertVaultLogin() {
     }
 
     if (mode === 'signup' && !name.trim()) {
-      setError('Please enter your club name.');
+      setError('Please enter your organisation name.');
       setLoading(false);
       return;
     }
@@ -124,13 +124,13 @@ export default function CertVaultLogin() {
             <form onSubmit={handleSubmit} className="space-y-5">
               {mode === 'signup' && (
                 <div>
-                  <label className="block text-sm font-medium text-[var(--apple-text-primary)] mb-1.5" htmlFor="club-name">Club Name</label>
+                  <label className="block text-sm font-medium text-[var(--apple-text-primary)] mb-1.5" htmlFor="club-name">Organisation name</label>
                   <input
                     id="club-name"
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="e.g. IEEE CS SRM"
+                    placeholder=""
                     className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-[var(--apple-accent)]/20 focus:border-[var(--apple-accent)] transition-all outline-none text-sm"
                     required
                     disabled={loading}

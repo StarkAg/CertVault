@@ -171,7 +171,7 @@ export default function CertVaultDashboard() {
     e.preventDefault();
     const name = completeSignupName.trim();
     if (!name) {
-      setCompleteSignupError('Club name is required');
+      setCompleteSignupError('Organisation name is required');
       return;
     }
     setCompleteSignupError('');
@@ -687,13 +687,13 @@ export default function CertVaultDashboard() {
               <p className="text-[var(--apple-text-secondary)] text-sm mb-6">Enter your club or organization name to finish signing up.</p>
               <form onSubmit={handleCompleteSignup} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-[var(--apple-text-primary)] mb-1.5" htmlFor="complete-org-name">Club / Organization name</label>
+                  <label className="block text-sm font-medium text-[var(--apple-text-primary)] mb-1.5" htmlFor="complete-org-name">Organisation name</label>
                   <input
                     id="complete-org-name"
                     type="text"
                     value={completeSignupName}
                     onChange={(e) => setCompleteSignupName(e.target.value)}
-                    placeholder="e.g. IEEE CS SRM"
+                    placeholder=""
                     className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-[var(--apple-accent)]/20 focus:border-[var(--apple-accent)] outline-none text-sm"
                     required
                     disabled={completeSignupLoading}

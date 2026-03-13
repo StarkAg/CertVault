@@ -370,7 +370,7 @@ export default async function handler(req, res) {
 
       const { name } = req.body || {};
       if (!name || typeof name !== 'string' || !name.trim()) {
-        return res.status(400).json({ success: false, error: 'Club name is required' });
+        return res.status(400).json({ success: false, error: 'Organisation name is required' });
       }
 
       const nameTrim = name.trim();

@@ -170,11 +170,14 @@ const CERTVAULT_NAV = [
 
 const DEFAULT_LOGO = '/image.png';
 
+const HIDE_HEADER_PATHS = ['/dashboard', '/design', '/auth/callback'];
+
 export default function CertVaultLayout({ children }) {
   const location = useLocation();
   const [logoUrl, setLogoUrl] = useState(DEFAULT_LOGO);
   const isDesignPage = location.pathname === '/design';
   const isVerifyPage = location.pathname === '/verify';
+  const showHeader = !HIDE_HEADER_PATHS.includes(location.pathname);
 
   useEffect(() => {
     if (!isVerifyPage) setLogoUrl(DEFAULT_LOGO);
@@ -216,49 +219,51 @@ export default function CertVaultLayout({ children }) {
         }
       `}</style>
 
-      <header className="certvault-stitch-header sticky top-0 z-[100] w-full bg-white/80 backdrop-blur-xl border-b border-[#e8e8ed]">
-        <div className="max-w-[2560px] mx-auto px-6 sm:px-12 py-2.5 flex items-center justify-between">
-          <Link to="/" className="flex flex-col gap-0.5 group cursor-pointer text-[var(--apple-text-primary)] no-underline">
-            <div className="flex items-center gap-2">
-              {logoUrl && logoUrl !== DEFAULT_LOGO ? (
-                <img src={logoUrl} alt="CertVault" className="h-8 w-auto object-contain" />
-              ) : (
-                <span className="material-symbols-outlined text-[var(--apple-accent)] text-[28px]">verified_user</span>
-              )}
-              <span className="text-[21px] font-semibold tracking-tight">CertVault</span>
-            </div>
-            <span className="text-[10px] font-medium text-[var(--apple-text-secondary)] uppercase tracking-widest opacity-70">A GradeX Product</span>
-          </Link>
-          <div className="certvault-center hidden lg:block flex-1" aria-hidden />
-          <nav className="certvault-nav-wrap flex items-center gap-6 lg:gap-8">
-            {CERTVAULT_NAV.map(({ path, label, pill }) => {
-              const isActive = location.pathname === path || (path === '/' && location.pathname === '/');
-              if (pill) {
+      {showHeader && (
+        <header className="certvault-stitch-header sticky top-0 z-[100] w-full bg-white/80 backdrop-blur-xl border-b border-[#e8e8ed]">
+          <div className="max-w-[2560px] mx-auto px-6 sm:px-12 py-2.5 flex items-center justify-between">
+            <Link to="/" className="flex flex-col gap-0.5 group cursor-pointer text-[var(--apple-text-primary)] no-underline">
+              <div className="flex items-center gap-2">
+                {logoUrl && logoUrl !== DEFAULT_LOGO ? (
+                  <img src={logoUrl} alt="CertVault" className="h-8 w-auto object-contain" />
+                ) : (
+                  <span className="material-symbols-outlined text-[var(--apple-accent)] text-[28px]">verified_user</span>
+                )}
+                <span className="text-[21px] font-semibold tracking-tight">CertVault</span>
+              </div>
+              <span className="text-[10px] font-medium text-[var(--apple-text-secondary)] uppercase tracking-widest opacity-70">A GradeX Product</span>
+            </Link>
+            <div className="certvault-center hidden lg:block flex-1" aria-hidden />
+            <nav className="certvault-nav-wrap flex items-center gap-6 lg:gap-8">
+              {CERTVAULT_NAV.map(({ path, label, pill }) => {
+                const isActive = location.pathname === path || (path === '/' && location.pathname === '/');
+                if (pill) {
+                  return (
+                    <Link
+                      key={path}
+                      to={path}
+                      className="ml-2 sm:ml-4 bg-[var(--apple-accent)] text-white px-4 py-1.5 rounded-full text-[12px] font-medium hover:brightness-110 transition-all no-underline"
+                    >
+                      {label}
+                    </Link>
+                  );
+                }
                 return (
                   <Link
                     key={path}
                     to={path}
-                    className="ml-2 sm:ml-4 bg-[var(--apple-accent)] text-white px-4 py-1.5 rounded-full text-[12px] font-medium hover:brightness-110 transition-all no-underline"
+                    className={`text-[12px] font-medium uppercase tracking-widest no-underline transition-colors ${
+                      isActive ? 'text-[var(--apple-accent)]' : 'text-[var(--apple-text-secondary)] hover:text-[var(--apple-accent)]'
+                    }`}
                   >
                     {label}
                   </Link>
                 );
-              }
-              return (
-                <Link
-                  key={path}
-                  to={path}
-                  className={`text-[12px] font-medium uppercase tracking-widest no-underline transition-colors ${
-                    isActive ? 'text-[var(--apple-accent)]' : 'text-[var(--apple-text-secondary)] hover:text-[var(--apple-accent)]'
-                  }`}
-                >
-                  {label}
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
-      </header>
+              })}
+            </nav>
+          </div>
+        </header>
+      )}
 
       <main
         className="certvault-main"

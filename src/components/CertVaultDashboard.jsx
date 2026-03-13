@@ -15,7 +15,7 @@ const API_BASE = '/api/certvault';
 const DESIGN_STORAGE_KEY = 'certvault_design';
 const PENDING_ORG_NAME_KEY = 'certvault_pending_org_name';
 
-/** First word of name, slugified (lowercase, a-z0-9). Used to suggest student download slug. */
+/** First word of event name, slugified (lowercase, a-z0-9). E.g. "HackFest 444" → "hackfest". */
 function firstWordSlug(name) {
   if (!name || typeof name !== 'string') return '';
   const first = name.trim().split(/\s+/)[0] || '';
@@ -921,7 +921,7 @@ export default function CertVaultDashboard() {
                   onChange={(e) => {
                     const v = e.target.value;
                     setNewEventName(v);
-                    setNewEventDownloadSlug(prev => prev === '' ? firstWordSlug(v) : prev);
+                    setNewEventDownloadSlug(firstWordSlug(v));
                   }}
                   className="certvault-dashboard-input"
                   style={styles.input}

@@ -32,8 +32,8 @@ import { tmpdir } from 'os';
 import crypto from 'crypto';
 
 const supabaseUrl = process.env.SUPABASE_URL?.trim();
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY?.trim();
-const supabaseServer = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
+const supabaseServerKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() || process.env.SUPABASE_ANON_KEY?.trim();
+const supabaseServer = supabaseUrl && supabaseServerKey ? createClient(supabaseUrl, supabaseServerKey) : null;
 
 // Convex client is created lazily via getConvexClient() when CONVEX_URL is set
 

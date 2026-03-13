@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              colors: {
+                "primary": "#197fe6",
+                "background-light": "#fafafa",
+                "neutral-dark": "#1d1d1f",
+                "neutral-secondary": "#86868b",
+              },
+              fontFamily: {
+                "display": ["Inter", "sans-serif"]
+              },
+              borderRadius: {
+                "cta": "12px",
+              },
+            },
+          },
+        }
+      </script>
+<title>CertVault - Secure Club Login</title>
+</head>
+<body class="bg-background-light font-display antialiased min-h-screen flex items-center justify-center p-6">
+<div class="w-full max-w-[400px]">
+<div class="flex items-center justify-center gap-2 mb-8">
+<div class="flex items-center justify-center size-8 bg-primary rounded-lg text-white">
+<span class="material-symbols-outlined text-xl">shield_person</span>
+</div>
+<h2 class="text-xl font-bold tracking-tight text-neutral-dark">CertVault</h2>
+</div>
+<div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
+<h1 class="text-[32px] font-semibold text-neutral-dark mb-6 tracking-tight">Club Login</h1>
+<div class="mb-6 p-3 rounded-lg bg-red-50 border border-red-100 flex items-start gap-2 text-red-600 text-sm">
+<span class="material-symbols-outlined text-sm mt-0.5">error</span>
+<span>The email or password you entered is incorrect. Please try again.</span>
+</div>
+<form class="space-y-5" onsubmit="return false;">
+<div>
+<label class="block text-sm font-medium text-neutral-dark mb-1.5" for="email">Email</label>
+<input class="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none text-sm" id="email" name="email" placeholder="name@example.com" type="email"/>
+</div>
+<div>
+<label class="block text-sm font-medium text-neutral-dark mb-1.5" for="password">Password</label>
+<input class="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none text-sm" id="password" name="password" placeholder="••••••••" type="password"/>
+</div>
+<div class="hidden" id="signupFields">
+<label class="block text-sm font-medium text-neutral-dark mb-1.5" for="club-name">Club Name <span class="text-neutral-secondary font-normal">(Optional)</span></label>
+<input class="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none text-sm" id="club-name" name="club-name" placeholder="Your organization name" type="text"/>
+</div>
+<div class="pt-2">
+<button class="w-full bg-primary text-white font-semibold py-3.5 rounded-cta shadow-lg shadow-primary/20 hover:opacity-95 active:scale-[0.98] transition-all" type="submit">
+                        Sign In
+                    </button>
+</div>
+</form>
+<div class="mt-8 pt-6 border-t border-slate-50 text-center">
+<a class="text-sm font-medium text-primary hover:underline transition-all" href="#">
+                    Need an account? Sign up
+                </a>
+</div>
+</div>
+<footer class="mt-8 text-center">
+<p class="text-neutral-secondary text-xs">
+                © 2024 CertVault Inc. All rights reserved.
+            </p>
+</footer>
+</div>
+
+</body></html>

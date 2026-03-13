@@ -6,6 +6,7 @@ import {
   CertVaultForClubs,
   CertVaultVerify,
   CertVaultLogin,
+  CertVaultAuthCallback,
   CertVaultDashboard,
   CertVaultDesign,
   CertVaultDownload,
@@ -19,6 +20,7 @@ export default function App() {
       <Route path="/for-clubs" element={<CertVaultForClubs />} />
       <Route path="/verify" element={<CertVaultVerify />} />
       <Route path="/login" element={<CertVaultLogin />} />
+      <Route path="/auth/callback" element={<CertVaultAuthCallback />} />
       <Route path="/dashboard" element={<CertVaultDashboard />} />
       <Route path="/design" element={<CertVaultDesign />} />
       <Route path="/:eventSlug" element={<CertVaultDownload />} />

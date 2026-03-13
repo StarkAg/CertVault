@@ -1,93 +1,53 @@
 /**
- * CertVault How It Works page.
+ * CertVault How It Works – from Stitch screen-3 (stitch-assets/screens/screen-3-*.html).
  */
 import React from 'react';
 import { Link } from 'react-router-dom';
 import CertVaultLayout from './CertVaultLayout';
-import { certVaultTheme as theme } from '../theme';
+
+const STEPS = [
+  { icon: 'upload_file', title: '1. Upload Credentials', desc: 'Securely upload your professional certificates in any standard format.' },
+  { icon: 'verified_user', title: '2. Secure Verification', desc: 'Our system validates the authenticity of your documents via encrypted anchors.' },
+  { icon: 'lock', title: '3. Encrypted Storage', desc: 'Your data is stored in a private vault with enterprise-grade protection.' },
+  { icon: 'share', title: '4. Instant Sharing', desc: 'Share verified links with employers or organizations in a single click.' },
+];
 
 export default function CertVaultHowItWorks() {
   return (
     <CertVaultLayout>
-      <style>{`
-        @media (max-width: 768px) {
-          .certvault-how-it-works-wrap {
-            padding: 0 12px !important;
-          }
-          .certvault-how-it-works-title {
-            font-size: 20px !important;
-            white-space: nowrap !important;
-          }
-          .certvault-how-it-works-lead {
-            font-size: 13px !important;
-          }
-          .certvault-how-it-works-list {
-            padding-left: 18px !important;
-            max-width: 100% !important;
-            font-size: 13px !important;
-          }
-          .certvault-how-it-works-list-item {
-            font-size: 13px !important;
-            margin-bottom: 12px !important;
-          }
-          .certvault-how-it-works-disclaimer {
-            font-size: 12px !important;
-            padding: 12px !important;
-          }
-          .certvault-how-it-works-actions {
-            flex-direction: column !important;
-            gap: 10px !important;
-          }
-          .certvault-how-it-works-actions a {
-            width: 100% !important;
-            font-size: 13px !important;
-            padding: 10px 20px !important;
-            white-space: nowrap !important;
-          }
-        }
-      `}</style>
-      <div className="certvault-how-it-works-wrap" style={styles.wrap}>
-        <h1 className="certvault-how-it-works-title" style={styles.title}>How It Works</h1>
-        <p className="certvault-how-it-works-lead" style={styles.lead}>
-          CertVault provides certificate hosting and verification. Organizations issue certificates; CertVault generates IDs and hosts records.
-        </p>
-
-        <ol className="certvault-how-it-works-list" style={styles.list}>
-          <li className="certvault-how-it-works-list-item" style={styles.listItem}>
-            <strong>Organizations create events.</strong> Clubs sign in and create an event (e.g. workshop, hackathon).
-          </li>
-          <li className="certvault-how-it-works-list-item" style={styles.listItem}>
-            <strong>Participants are added.</strong> Upload a CSV (Name, Email, Category) or add participants manually.
-          </li>
-          <li className="certvault-how-it-works-list-item" style={styles.listItem}>
-            <strong>Certificates are generated.</strong> CertVault assigns a unique Certificate ID to each certificate. Organizations cannot edit IDs.
-          </li>
-          <li className="certvault-how-it-works-list-item" style={styles.listItem}>
-            <strong>Anyone can verify.</strong> Use the Verify Certificate page with the Certificate ID. No login required.
-          </li>
-        </ol>
-
-        <p className="certvault-how-it-works-disclaimer" style={styles.disclaimer}>
-          CertVault does not conduct events or certify skills. Certificates are issued by respective organizations. Hosted & verified via CertVault.
-        </p>
-
-        <div className="certvault-how-it-works-actions" style={styles.actions}>
-          <Link to="/verify" style={styles.btn}>Verify Certificate</Link>
-          <Link to="/for-clubs" style={styles.btnSecondary}>For Clubs</Link>
+      <main className="flex flex-1 flex-col items-center px-6 py-20 md:py-32 min-h-screen">
+        <div className="max-w-[720px] w-full flex flex-col items-center">
+          <div className="text-center mb-20">
+            <h1 className="text-[var(--apple-text-primary)] text-4xl md:text-5xl font-extrabold tracking-tight mb-6">
+              How it works
+            </h1>
+            <p className="text-[var(--apple-text-secondary)] text-lg md:text-xl font-medium leading-relaxed">
+              A seamless, secure workflow for managing your digital credentials.
+            </p>
+          </div>
+          <div className="w-full space-y-16">
+            {STEPS.map((step, i) => (
+              <div key={i} className="flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8 text-center md:text-left">
+                <div className="flex-shrink-0 flex items-center justify-center size-12 rounded-xl bg-slate-100 text-[var(--apple-accent)]">
+                  <span className="material-symbols-outlined text-2xl">{step.icon}</span>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-[var(--apple-text-primary)] text-xl font-bold mb-2">{step.title}</h3>
+                  <p className="text-[var(--apple-text-secondary)] text-base">{step.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-24 w-full">
+            <Link to="/verify" className="w-full sm:w-auto flex min-w-[200px] items-center justify-center rounded-xl bg-[var(--apple-accent)] h-14 px-8 text-white text-base font-bold shadow-lg shadow-blue-500/20 hover:opacity-90 transition-all">
+              Verify Certificate
+            </Link>
+            <Link to="/for-clubs" className="w-full sm:w-auto flex min-w-[200px] items-center justify-center rounded-xl border-2 border-slate-200 h-14 px-8 text-[var(--apple-text-primary)] text-base font-bold hover:bg-slate-50 transition-colors">
+              For Clubs
+            </Link>
+          </div>
         </div>
-      </div>
+      </main>
     </CertVaultLayout>
   );
 }
-
-const styles = {
-  wrap: { maxWidth: 640, margin: '0 auto', textAlign: 'center' },
-  title: { fontFamily: "'AmericanCaptain', 'Bebas Neue', sans-serif", fontSize: 28, fontWeight: 400, letterSpacing: '0.03em', color: theme.text, margin: '0 0 16px' },
-  lead: { fontFamily: '"Inter", "Space Grotesk", sans-serif', fontSize: 16, color: theme.textSecondary, margin: '0 0 32px', lineHeight: 1.6 },
-  list: { paddingLeft: 24, margin: '0 auto 32px', textAlign: 'left', maxWidth: 560 },
-  listItem: { fontSize: 15, color: theme.textSecondary, marginBottom: 16, lineHeight: 1.6 },
-  disclaimer: { fontSize: 14, color: theme.textSecondary, margin: '0 0 32px', lineHeight: 1.6, padding: 16, backgroundColor: theme.bgCard, border: `1px solid ${theme.border}`, borderRadius: 8, textAlign: 'left' },
-  actions: { display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' },
-  btn: { display: 'inline-block', padding: '12px 24px', backgroundColor: theme.accent, color: '#fff', fontSize: 15, fontWeight: 500, textDecoration: 'none', borderRadius: 8, transition: 'all 0.2s ease' },
-  btnSecondary: { display: 'inline-block', padding: '12px 24px', backgroundColor: 'transparent', color: theme.accent, fontSize: 15, fontWeight: 500, textDecoration: 'none', borderRadius: 8, border: `1px solid ${theme.border}`, transition: 'all 0.2s ease' },
-};

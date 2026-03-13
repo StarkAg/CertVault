@@ -1,5 +1,6 @@
 /**
  * CertVault Club Dashboard — Events, Certificates, Settings.
+ * Auth: Supabase session (magic link) or legacy certvault_club_token.
  */
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -8,9 +9,11 @@ import CertVaultLayout from './CertVaultLayout';
 import { compressTemplateImage } from '../utils/certvaultCompress';
 import { pdfDownloadUrl } from '../utils/certvaultPdfUrl';
 import { certVaultTheme as theme } from '../theme';
+import { supabase } from '../lib/supabase';
 
 const API_BASE = '/api/certvault';
 const DESIGN_STORAGE_KEY = 'certvault_design';
+const PENDING_ORG_NAME_KEY = 'certvault_pending_org_name';
 
 const DASHBOARD_SECTIONS = [
   { id: 'events', label: 'Events' },
@@ -23,6 +26,11 @@ export default function CertVaultDashboard() {
   const [section, setSection] = useState('events');
   const [organization, setOrganization] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [authToken, setAuthToken] = useState(null);
+  const [needSignup, setNeedSignup] = useState(false);
+  const [completeSignupName, setCompleteSignupName] = useState('');
+  const [completeSignupLoading, setCompleteSignupLoading] = useState(false);
+  const [completeSignupError, setCompleteSignupError] = useState('');
 
   // Events state
   const [events, setEvents] = useState([]);
@@ -82,21 +90,52 @@ export default function CertVaultDashboard() {
     verify_line_font: "'Inter', sans-serif",
   });
 
-  const token = typeof window !== 'undefined' ? localStorage.getItem('certvault_club_token') : null;
+  const token = authToken || (typeof window !== 'undefined' ? localStorage.getItem('certvault_club_token') : null);
 
   const fetchWithAuth = useCallback(async (url, options = {}) => {
+    const t = authToken || (typeof window !== 'undefined' ? localStorage.getItem('certvault_club_token') : null);
+    if (!t) return fetch(url, options);
     return fetch(url, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
+        'Authorization': `Bearer ${t}`,
         ...options.headers,
       },
     });
-  }, [token]);
+  }, [authToken]);
+
+  // Resolve auth: Supabase session first, else legacy token
+  useEffect(() => {
+    if (!supabase) {
+      const legacy = typeof window !== 'undefined' ? localStorage.getItem('certvault_club_token') : null;
+      if (legacy) setAuthToken(legacy);
+      else setAuthToken('');
+      return;
+    }
+    let cancelled = false;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (cancelled) return;
+      if (session?.access_token) {
+        setAuthToken(session.access_token);
+      } else {
+        const legacy = typeof window !== 'undefined' ? localStorage.getItem('certvault_club_token') : null;
+        setAuthToken(legacy || '');
+      }
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (cancelled) return;
+      setAuthToken(session?.access_token || (typeof window !== 'undefined' ? localStorage.getItem('certvault_club_token') : null) || '');
+    });
+    return () => {
+      cancelled = true;
+      subscription?.unsubscribe();
+    };
+  }, []);
 
   // Load organization info
   useEffect(() => {
+    if (token === null) return;
     if (!token) {
       navigate('/login', { replace: true });
       return;
@@ -108,22 +147,55 @@ export default function CertVaultDashboard() {
         setOrganization(JSON.parse(storedOrg));
       } catch {}
     }
+    setCompleteSignupName(typeof window !== 'undefined' ? localStorage.getItem(PENDING_ORG_NAME_KEY) || '' : '');
 
-    // Verify token is still valid
     fetchWithAuth(`${API_BASE}?action=me`)
       .then(res => res.json())
       .then(data => {
         if (data.success && data.organization) {
           setOrganization(data.organization);
+          setNeedSignup(false);
           localStorage.setItem('certvault_club_org', JSON.stringify(data.organization));
+          if (typeof window !== 'undefined') localStorage.removeItem(PENDING_ORG_NAME_KEY);
+        } else if (data.needSignup && data.email) {
+          setNeedSignup(true);
         } else {
-          // Token invalid
           handleLogout();
         }
       })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [token, navigate, fetchWithAuth]);
+
+  async function handleCompleteSignup(e) {
+    e.preventDefault();
+    const name = completeSignupName.trim();
+    if (!name) {
+      setCompleteSignupError('Club name is required');
+      return;
+    }
+    setCompleteSignupError('');
+    setCompleteSignupLoading(true);
+    try {
+      const res = await fetchWithAuth(`${API_BASE}?action=ensure-org`, {
+        method: 'POST',
+        body: JSON.stringify({ name }),
+      });
+      const data = await res.json();
+      if (data.success && data.organization) {
+        setOrganization(data.organization);
+        setNeedSignup(false);
+        localStorage.setItem('certvault_club_org', JSON.stringify(data.organization));
+        if (typeof window !== 'undefined') localStorage.removeItem(PENDING_ORG_NAME_KEY);
+      } else {
+        setCompleteSignupError(data.error || 'Could not create organization');
+      }
+    } catch (err) {
+      setCompleteSignupError(err.message || 'Something went wrong');
+    } finally {
+      setCompleteSignupLoading(false);
+    }
+  }
 
   // Load events
   const loadEvents = useCallback(async () => {
@@ -209,8 +281,11 @@ export default function CertVaultDashboard() {
   }, [selectedEventId, events]);
 
   function handleLogout() {
+    if (supabase) supabase.auth.signOut();
     localStorage.removeItem('certvault_club_token');
     localStorage.removeItem('certvault_club_org');
+    localStorage.removeItem(PENDING_ORG_NAME_KEY);
+    setAuthToken('');
     navigate('/login');
   }
 
@@ -598,6 +673,49 @@ export default function CertVaultDashboard() {
     return (
       <CertVaultLayout>
         <div style={{ textAlign: 'center', padding: 48 }}>Loading...</div>
+      </CertVaultLayout>
+    );
+  }
+
+  if (needSignup) {
+    return (
+      <CertVaultLayout>
+        <div className="min-h-screen flex items-center justify-center p-6 bg-[var(--apple-bg)]">
+          <div className="w-full max-w-[400px]">
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
+              <h1 className="text-[24px] font-semibold text-[var(--apple-text-primary)] mb-2">Complete your profile</h1>
+              <p className="text-[var(--apple-text-secondary)] text-sm mb-6">Enter your club or organization name to finish signing up.</p>
+              <form onSubmit={handleCompleteSignup} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-[var(--apple-text-primary)] mb-1.5" htmlFor="complete-org-name">Club / Organization name</label>
+                  <input
+                    id="complete-org-name"
+                    type="text"
+                    value={completeSignupName}
+                    onChange={(e) => setCompleteSignupName(e.target.value)}
+                    placeholder="e.g. IEEE CS SRM"
+                    className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-[var(--apple-accent)]/20 focus:border-[var(--apple-accent)] outline-none text-sm"
+                    required
+                    disabled={completeSignupLoading}
+                  />
+                </div>
+                {completeSignupError && (
+                  <div className="p-3 rounded-lg bg-red-50 border border-red-100 text-red-600 text-sm">{completeSignupError}</div>
+                )}
+                <button
+                  type="submit"
+                  disabled={completeSignupLoading}
+                  className="w-full bg-[var(--apple-accent)] text-white font-semibold py-3 rounded-[12px] hover:opacity-95 disabled:opacity-60"
+                >
+                  {completeSignupLoading ? 'Creating…' : 'Continue'}
+                </button>
+              </form>
+            </div>
+            <p className="mt-6 text-center">
+              <button type="button" onClick={handleLogout} className="text-[var(--apple-text-secondary)] text-sm hover:text-[var(--apple-accent)]">Sign out</button>
+            </p>
+          </div>
+        </div>
       </CertVaultLayout>
     );
   }

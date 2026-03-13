@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              colors: {
+                "primary": "#197fe6",
+                "background-light": "#fafafa",
+                "background-dark": "#000000",
+                "neutral-dark": "#1d1d1f",
+                "neutral-secondary": "#86868b",
+                "apple-card": "#ffffff",
+              },
+              fontFamily: {
+                "display": ["Inter", "sans-serif"]
+              },
+              borderRadius: {
+                "DEFAULT": "0.5rem", 
+                "lg": "0.75rem", 
+                "xl": "1.25rem", 
+                "2xl": "1.5rem",
+                "full": "9999px"
+              },
+            },
+          },
+        }
+      </script>
+<style type="text/tailwindcss">
+        @layer base {
+            body {
+                @apply text-neutral-dark bg-background-light antialiased;
+                letter-spacing: -0.011em;
+            }
+        }
+        .apple-blur {
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+    </style>
+<title>CertVault - For Clubs &amp; Organizations</title>
+</head>
+<body class="font-display">
+<div class="relative flex min-h-screen w-full flex-col overflow-x-hidden">
+<header class="sticky top-0 z-50 w-full border-b border-gray-200/50 bg-white/80 apple-blur px-6 py-4 md:px-12 lg:px-24">
+<div class="mx-auto flex max-w-7xl items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="flex items-center justify-center size-7 bg-neutral-dark rounded-md text-white">
+<span class="material-symbols-outlined text-lg">shield_person</span>
+</div>
+<h2 class="text-lg font-semibold tracking-tight">CertVault</h2>
+</div>
+<nav class="hidden md:flex items-center gap-8">
+<a class="text-neutral-secondary hover:text-neutral-dark transition-colors text-sm font-medium" href="#">Features</a>
+<a class="text-neutral-secondary hover:text-neutral-dark transition-colors text-sm font-medium" href="#">Organizations</a>
+<a class="text-neutral-secondary hover:text-neutral-dark transition-colors text-sm font-medium" href="#">Pricing</a>
+</nav>
+<div class="flex items-center gap-3">
+<button class="text-neutral-dark text-sm font-medium px-4 py-2 hover:bg-black/5 rounded-full transition-colors">
+                    Club Login
+                </button>
+<button class="rounded-full bg-neutral-dark px-5 py-2 text-white text-sm font-medium hover:bg-neutral-dark/90 transition-colors">
+                    Get Started
+                </button>
+</div>
+</div>
+</header>
+<main class="flex flex-1 flex-col items-center pt-20 pb-24 px-6">
+<div class="max-w-[640px] w-full flex flex-col items-center text-center">
+<h1 class="text-[40px] font-bold tracking-tight leading-[1.1] text-neutral-dark mb-6">
+                For Clubs &amp; Organizations
+            </h1>
+<p class="text-[21px] text-neutral-secondary font-normal leading-relaxed mb-12">
+                Streamline your credentialing process with enterprise-grade tools built for student clubs, non-profits, and professional associations.
+            </p>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-8 text-left w-full mb-16">
+<div class="flex items-start gap-4">
+<span class="material-symbols-outlined text-primary mt-0.5">event_available</span>
+<div>
+<h3 class="font-semibold text-neutral-dark">Event Management</h3>
+<p class="text-sm text-neutral-secondary">Organize and issue certificates for workshops and seminars.</p>
+</div>
+</div>
+<div class="flex items-start gap-4">
+<span class="material-symbols-outlined text-primary mt-0.5">upload_file</span>
+<div>
+<h3 class="font-semibold text-neutral-dark">CSV Smart Upload</h3>
+<p class="text-sm text-neutral-secondary">Bulk import member data and issue hundreds of credentials instantly.</p>
+</div>
+</div>
+<div class="flex items-start gap-4">
+<span class="material-symbols-outlined text-primary mt-0.5">fingerprint</span>
+<div>
+<h3 class="font-semibold text-neutral-dark">Unique IDs</h3>
+<p class="text-sm text-neutral-secondary">Every certificate features a cryptographically secure unique identifier.</p>
+</div>
+</div>
+<div class="flex items-start gap-4">
+<span class="material-symbols-outlined text-primary mt-0.5">alternate_email</span>
+<div>
+<h3 class="font-semibold text-neutral-dark">Mass Email Delivery</h3>
+<p class="text-sm text-neutral-secondary">Automated delivery system with customizable email templates.</p>
+</div>
+</div>
+<div class="flex items-start gap-4">
+<span class="material-symbols-outlined text-primary mt-0.5">clinical_notes</span>
+<div>
+<h3 class="font-semibold text-neutral-dark">Centralized Management</h3>
+<p class="text-sm text-neutral-secondary">A unified dashboard to oversee your entire organization's records.</p>
+</div>
+</div>
+<div class="flex items-start gap-4">
+<span class="material-symbols-outlined text-primary mt-0.5">do_not_disturb_on</span>
+<div>
+<h3 class="font-semibold text-neutral-dark">Instant Revocation</h3>
+<p class="text-sm text-neutral-secondary">Maintain data integrity by revoking invalid or expired credentials.</p>
+</div>
+</div>
+</div>
+<div class="flex flex-col sm:flex-row items-center gap-4 mb-20 w-full sm:w-auto">
+<button class="w-full sm:w-auto min-w-[200px] rounded-full bg-primary px-8 py-4 text-white text-base font-semibold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all">
+                    Club Login
+                </button>
+<button class="w-full sm:w-auto min-w-[200px] rounded-full bg-white border border-gray-200 px-8 py-4 text-neutral-dark text-base font-semibold hover:bg-gray-50 transition-all">
+                    Contact Sales
+                </button>
+</div>
+</div>
+<div class="w-full max-w-5xl px-4 mb-24">
+<div class="relative bg-white rounded-3xl border border-gray-200/60 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] overflow-hidden">
+<div class="h-12 border-b border-gray-100 flex items-center px-6 bg-gray-50/50">
+<div class="flex gap-1.5">
+<div class="size-3 rounded-full bg-red-400/20 border border-red-400/40"></div>
+<div class="size-3 rounded-full bg-amber-400/20 border border-amber-400/40"></div>
+<div class="size-3 rounded-full bg-emerald-400/20 border border-emerald-400/40"></div>
+</div>
+<div class="mx-auto text-[11px] font-medium text-neutral-secondary tracking-wide">
+                        certvault.io/admin/dashboard
+                    </div>
+</div>
+<div class="p-8 aspect-[16/9] flex flex-col gap-8">
+<div class="flex justify-between items-end">
+<div class="space-y-1">
+<div class="h-4 w-32 bg-gray-100 rounded"></div>
+<div class="h-8 w-48 bg-gray-200 rounded"></div>
+</div>
+<div class="flex gap-2">
+<div class="h-10 w-24 bg-primary/10 rounded-lg"></div>
+<div class="h-10 w-10 bg-gray-100 rounded-lg"></div>
+</div>
+</div>
+<div class="grid grid-cols-3 gap-6">
+<div class="h-24 bg-gray-50 rounded-2xl border border-gray-100"></div>
+<div class="h-24 bg-gray-50 rounded-2xl border border-gray-100"></div>
+<div class="h-24 bg-gray-50 rounded-2xl border border-gray-100"></div>
+</div>
+<div class="flex-1 bg-white border border-gray-100 rounded-2xl p-6 shadow-sm overflow-hidden flex flex-col gap-4">
+<div class="flex items-center justify-between border-b border-gray-50 pb-4">
+<div class="h-4 w-40 bg-gray-100 rounded"></div>
+<div class="h-4 w-20 bg-gray-100 rounded"></div>
+</div>
+<div class="space-y-4">
+<div class="flex items-center gap-4">
+<div class="size-8 rounded-full bg-gray-100"></div>
+<div class="flex-1 h-3 bg-gray-50 rounded"></div>
+<div class="w-16 h-3 bg-gray-50 rounded"></div>
+</div>
+<div class="flex items-center gap-4">
+<div class="size-8 rounded-full bg-gray-100"></div>
+<div class="flex-1 h-3 bg-gray-50 rounded"></div>
+<div class="w-16 h-3 bg-gray-50 rounded"></div>
+</div>
+<div class="flex items-center gap-4">
+<div class="size-8 rounded-full bg-gray-100"></div>
+<div class="flex-1 h-3 bg-gray-50 rounded"></div>
+<div class="w-16 h-3 bg-gray-50 rounded"></div>
+</div>
+</div>
+<div class="mt-auto flex justify-center">
+<div class="text-[12px] font-semibold text-primary uppercase tracking-widest">Dashboard Preview Mockup</div>
+</div>
+</div>
+</div>
+<div class="absolute inset-0 pointer-events-none bg-gradient-to-t from-white via-transparent to-transparent opacity-20"></div>
+</div>
+</div>
+<div class="max-w-[640px] w-full">
+<div class="bg-gray-100/50 rounded-2xl p-8 border border-gray-200/40">
+<div class="flex gap-4">
+<span class="material-symbols-outlined text-neutral-secondary">info</span>
+<div class="space-y-2">
+<h4 class="text-sm font-semibold text-neutral-dark">Important Information for Organizations</h4>
+<p class="text-xs text-neutral-secondary leading-relaxed">
+                            CertVault for Clubs is subject to our Organization Data Protection Agreement. Standard accounts are limited to 500 active credentials per event. For higher volume requirements or white-labeling solutions, please contact our enterprise relations team. Security audits are performed quarterly to ensure compliance with global digital credential standards.
+                        </p>
+</div>
+</div>
+</div>
+</div>
+</main>
+<footer class="border-t border-gray-200 bg-white px-6 py-12">
+<div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
+<div class="flex items-center gap-2 text-neutral-dark">
+<div class="flex items-center justify-center size-6 bg-neutral-dark rounded text-white scale-75">
+<span class="material-symbols-outlined text-sm">shield_person</span>
+</div>
+<span class="font-bold text-sm tracking-tight">CertVault</span>
+</div>
+<div class="flex flex-wrap justify-center gap-8">
+<a class="text-neutral-secondary hover:text-neutral-dark transition-colors text-xs font-medium" href="#">Privacy Policy</a>
+<a class="text-neutral-secondary hover:text-neutral-dark transition-colors text-xs font-medium" href="#">Terms</a>
+<a class="text-neutral-secondary hover:text-neutral-dark transition-colors text-xs font-medium" href="#">Compliance</a>
+</div>
+<p class="text-neutral-secondary text-xs">
+                © 2024 CertVault. Engineering excellence in credentials.
+            </p>
+</div>
+</footer>
+</div>
+
+</body></html>

@@ -113,6 +113,14 @@ app.get('*', (req, res) => {
 const server = http.createServer(app);
 const port = Number(PORT) || 3001;
 
+// Startup: required env (API will return misconfigured until these are set)
+const requiredEnv = ['CONVEX_URL'];
+const missing = requiredEnv.filter((k) => !process.env[k] || process.env[k].includes('your-'));
+if (missing.length) {
+  console.warn('[CertVault] Missing required env:', missing.join(', '));
+  console.warn('[CertVault] Run `npx convex dev` to get CONVEX_URL, or set it in Railway / .env — see README');
+}
+
 // Startup: verify dist exists (helps debug white screen in production)
 try {
   const idx = join(distPath, 'index.html');

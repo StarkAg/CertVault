@@ -8,3 +8,6 @@ dist
 .DS_Store
 README.md
 .editorconfig
+certgen-service
+certifier-mirror-authed
+certifier-mirror

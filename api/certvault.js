@@ -5,8 +5,10 @@
  *  - GET /api/certvault?action=verify&certificate_id=XXX - verify certificate
  * 
  * Club auth endpoints:
- *  - POST /api/certvault?action=signup - club signup
- *  - POST /api/certvault?action=login - club login
+ *  - POST /api/certvault?action=signup - club signup (legacy password)
+ *  - POST /api/certvault?action=login - club login (legacy password)
+ *  - GET /api/certvault?action=me - current club (supports Supabase JWT or legacy token)
+ *  - POST /api/certvault?action=ensure-org - complete magic-link signup (body: { name }, Bearer Supabase JWT)
  * 
  * Protected endpoints (requires club auth):
  *  - GET /api/certvault?action=me - get current club info
@@ -22,19 +24,29 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import { getConvexClient, isConvexConfigured, docToApi, docsToApi, api } from '../lib/convex.js';
 import { uploadCertificate, deleteCertificate, isCloudinaryConfigured } from '../lib/cloudinary.js';
 import { writeFile, unlink } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import crypto from 'crypto';
 
-// Supabase client (service_role for backend operations)
-const supabase = process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
-  ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
-  : null;
+const supabaseUrl = process.env.SUPABASE_URL?.trim();
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY?.trim();
+const supabaseServer = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
+
+// Convex client is created lazily via getConvexClient() when CONVEX_URL is set
 
 // Certificate generator service URL (Flask service on same server)
 const CERTGEN_SERVICE_URL = process.env.CERTGEN_SERVICE_URL || 'http://localhost:5050';
+
+function isPdfGenerationAvailable() {
+  const url = (process.env.CERTGEN_SERVICE_URL || '').trim() || 'http://localhost:5050';
+  if (process.env.NODE_ENV === 'production' && (url.startsWith('http://localhost') || url.startsWith('http://127.0.0.1'))) {
+    return false;
+  }
+  return true;
+}
 
 /**
  * Call the certificate generator service to create PDF
@@ -134,13 +146,38 @@ function verifyClubToken(token) {
 }
 
 /**
- * Extract and verify club from Authorization header
+ * Get Supabase user from JWT (returns { email, id } or null)
  */
-function getClubFromRequest(req) {
+async function getSupabaseUser(token) {
+  if (!supabaseServer || !token) return null;
+  try {
+    const { data: { user }, error } = await supabaseServer.auth.getUser(token);
+    if (error || !user?.email) return null;
+    return { email: user.email.toLowerCase().trim(), id: user.id };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Extract and verify club from Authorization header.
+ * Accepts legacy base64 token or Supabase JWT; returns { organizationId, email, slug } or null.
+ * If Supabase JWT valid but no org exists, returns { _supabaseEmail } for needSignup flow.
+ */
+async function getClubFromRequest(req, convex) {
   const authHeader = req.headers?.authorization || '';
   const token = authHeader.replace(/^Bearer\s+/i, '').trim();
   if (!token) return null;
-  return verifyClubToken(token);
+
+  const legacy = verifyClubToken(token);
+  if (legacy) return legacy;
+
+  const supabaseUser = await getSupabaseUser(token);
+  if (!supabaseUser) return null;
+
+  const org = await convex.query(api.organizations.getByEmail, { email: supabaseUser.email });
+  if (!org) return { _supabaseEmail: supabaseUser.email };
+  return { organizationId: org._id, email: org.email, slug: org.slug };
 }
 
 /**
@@ -185,11 +222,10 @@ export default async function handler(req, res) {
 
   const action = req.query?.action || req.body?.action;
 
-  const needsSupabase = action !== 'proxy-pdf';
+  const needsConvex = action !== 'proxy-pdf';
   const missingEnv = [];
-  if (needsSupabase) {
-    if (!process.env.SUPABASE_URL) missingEnv.push('SUPABASE_URL');
-    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) missingEnv.push('SUPABASE_SERVICE_ROLE_KEY');
+  if (needsConvex && !isConvexConfigured()) {
+    missingEnv.push('CONVEX_URL');
   }
   if (missingEnv.length) {
     console.error('[CertVault] Missing required env:', missingEnv.join(', '));
@@ -197,7 +233,13 @@ export default async function handler(req, res) {
       success: false,
       error: 'CertVault server misconfigured. Missing environment variables.',
       missing: missingEnv,
+      hint: 'Set CONVEX_URL in Railway Variables or .env. Run `npx convex dev` to get your URL. See README.',
     });
+  }
+
+  const convex = getConvexClient();
+  if (needsConvex && !convex) {
+    return res.status(500).json({ success: false, error: 'Convex client not configured.' });
   }
 
   try {
@@ -225,42 +267,29 @@ export default async function handler(req, res) {
       const nameTrim = name.trim();
       const slug = generateSlug(nameTrim);
 
-      // Check if email already exists
-      const { data: existing } = await supabase
-        .from('certvault_organizations')
-        .select('id')
-        .eq('email', emailTrim)
-        .maybeSingle();
-
+      const existing = await convex.query(api.organizations.getByEmail, { email: emailTrim });
       if (existing) {
         return res.status(400).json({ success: false, error: 'Email already registered' });
       }
 
-      // Create organization
-      const { data: org, error } = await supabase
-        .from('certvault_organizations')
-        .insert({
-          name: nameTrim,
-          slug,
-          email: emailTrim,
-          password_hash: password,
-        })
-        .select()
-        .single();
+      const org = await convex.mutation(api.organizations.create, {
+        name: nameTrim,
+        slug,
+        email: emailTrim,
+        password_hash: password,
+      });
 
-      if (error) {
-        console.error('[CertVault] Signup error:', error);
-        return res.status(500).json({ success: false, error: error.message });
+      if (!org) {
+        return res.status(500).json({ success: false, error: 'Failed to create organization' });
       }
 
-      // Create token
-      const token = createClubToken(org.id, org.email, org.slug);
+      const token = createClubToken(org._id, org.email, org.slug);
 
       return res.status(200).json({
         success: true,
         token,
         organization: {
-          id: org.id,
+          id: org._id,
           name: org.name,
           slug: org.slug,
           email: org.email,
@@ -282,30 +311,19 @@ export default async function handler(req, res) {
 
       const emailTrim = email.trim().toLowerCase();
 
-      // Find organization
-      const { data: org, error } = await supabase
-        .from('certvault_organizations')
-        .select('id, name, slug, email, password_hash')
-        .eq('email', emailTrim)
-        .maybeSingle();
+      const org = await convex.query(api.organizations.getByEmail, { email: emailTrim });
 
-      if (error || !org) {
+      if (!org || org.password_hash !== password) {
         return res.status(401).json({ success: false, error: 'Invalid email or password' });
       }
 
-      // Verify password (direct comparison)
-      if (org.password_hash !== password) {
-        return res.status(401).json({ success: false, error: 'Invalid email or password' });
-      }
-
-      // Create token
-      const token = createClubToken(org.id, org.email, org.slug);
+      const token = createClubToken(org._id, org.email, org.slug);
 
       return res.status(200).json({
         success: true,
         token,
         organization: {
-          id: org.id,
+          id: org._id,
           name: org.name,
           slug: org.slug,
           email: org.email,
@@ -313,24 +331,72 @@ export default async function handler(req, res) {
       });
     }
 
-    // GET: Get current club info
+    // GET: Get current club info (supports legacy token or Supabase JWT)
     if (action === 'me') {
-      const club = getClubFromRequest(req);
+      const club = await getClubFromRequest(req, convex);
       if (!club) {
         return res.status(401).json({ success: false, error: 'Authentication required' });
       }
+      if (club._supabaseEmail) {
+        return res.status(200).json({ success: false, needSignup: true, email: club._supabaseEmail });
+      }
 
-      const { data: org } = await supabase
-        .from('certvault_organizations')
-        .select('id, name, slug, email, created_at')
-        .eq('id', club.organizationId)
-        .single();
+      const org = await convex.query(api.organizations.getById, { id: club.organizationId });
 
       if (!org) {
         return res.status(404).json({ success: false, error: 'Organization not found' });
       }
 
-      return res.status(200).json({ success: true, organization: org });
+      return res.status(200).json({
+        success: true,
+        organization: docToApi(org),
+      });
+    }
+
+    // POST: Ensure org exists (Supabase magic-link signup completion). Body: { name }.
+    if (action === 'ensure-org') {
+      if (req.method !== 'POST') {
+        return res.status(405).json({ success: false, error: 'Method not allowed' });
+      }
+      if (!supabaseServer) {
+        return res.status(501).json({ success: false, error: 'Supabase auth not configured' });
+      }
+
+      const token = req.headers?.authorization?.replace(/^Bearer\s+/i, '').trim();
+      const supabaseUser = await getSupabaseUser(token);
+      if (!supabaseUser) {
+        return res.status(401).json({ success: false, error: 'Invalid or expired link. Sign in again from the login page.' });
+      }
+
+      const { name } = req.body || {};
+      if (!name || typeof name !== 'string' || !name.trim()) {
+        return res.status(400).json({ success: false, error: 'Club name is required' });
+      }
+
+      const nameTrim = name.trim();
+      const emailTrim = supabaseUser.email;
+      const existing = await convex.query(api.organizations.getByEmail, { email: emailTrim });
+      if (existing) {
+        return res.status(200).json({
+          success: true,
+          organization: docToApi(existing),
+        });
+      }
+
+      const slug = generateSlug(nameTrim);
+      const org = await convex.mutation(api.organizations.create, {
+        name: nameTrim,
+        slug,
+        email: emailTrim,
+        password_hash: '',
+      });
+      if (!org) {
+        return res.status(500).json({ success: false, error: 'Failed to create organization' });
+      }
+      return res.status(200).json({
+        success: true,
+        organization: docToApi(org),
+      });
     }
 
     // =====================
@@ -343,9 +409,12 @@ export default async function handler(req, res) {
         return res.status(405).json({ success: false, error: 'Method not allowed' });
       }
 
-      const club = getClubFromRequest(req);
+      const club = await getClubFromRequest(req, convex);
       if (!club) {
         return res.status(401).json({ success: false, error: 'Authentication required' });
+      }
+      if (club._supabaseEmail) {
+        return res.status(403).json({ success: false, needSignup: true, email: club._supabaseEmail });
       }
 
       const { name, event_date, download_slug } = req.body || {};
@@ -356,50 +425,37 @@ export default async function handler(req, res) {
 
       const slug = typeof download_slug === 'string' ? download_slug.trim().toLowerCase().replace(/[^a-z0-9-]/g, '') || null : null;
 
-      const { data: event, error } = await supabase
-        .from('certvault_events')
-        .insert({
-          organization_id: club.organizationId,
-          name: name.trim(),
-          event_date: event_date || null,
-          download_slug: slug || null,
-        })
-        .select()
-        .single();
+      const event = await convex.mutation(api.events.create, {
+        organization_id: club.organizationId,
+        name: name.trim(),
+        event_date: event_date || undefined,
+        download_slug: slug || undefined,
+      });
 
-      if (error) {
-        console.error('[CertVault] Create event error:', error);
-        return res.status(500).json({ success: false, error: error.message });
+      if (!event) {
+        return res.status(500).json({ success: false, error: 'Failed to create event' });
       }
 
-      return res.status(200).json({ success: true, event });
+      return res.status(200).json({ success: true, event: docToApi(event) });
     }
 
     // GET: List events for organization
     if (action === 'list-events') {
-      const club = getClubFromRequest(req);
+      const club = await getClubFromRequest(req, convex);
       if (!club) {
         return res.status(401).json({ success: false, error: 'Authentication required' });
       }
-
-      const { data: events, error } = await supabase
-        .from('certvault_events')
-        .select('id, name, event_date, download_slug, created_at')
-        .eq('organization_id', club.organizationId)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        return res.status(500).json({ success: false, error: error.message });
+      if (club._supabaseEmail) {
+        return res.status(403).json({ success: false, needSignup: true, email: club._supabaseEmail });
       }
 
-      // Get certificate counts for each event
-      const eventsWithCounts = await Promise.all(events.map(async (event) => {
-        const { count } = await supabase
-          .from('certvault_certificates')
-          .select('id', { count: 'exact', head: true })
-          .eq('event_id', event.id);
-        return { ...event, certificate_count: count || 0 };
-      }));
+      const events = await convex.query(api.events.listByOrganization, { organization_id: club.organizationId });
+      const eventsWithCounts = await Promise.all(
+        events.map(async (event) => {
+          const count = await convex.query(api.certificates.countByEvent, { event_id: event._id });
+          return { ...docToApi(event), certificate_count: count };
+        })
+      );
 
       return res.status(200).json({ success: true, events: eventsWithCounts });
     }
@@ -410,9 +466,12 @@ export default async function handler(req, res) {
         return res.status(405).json({ success: false, error: 'Method not allowed' });
       }
 
-      const club = getClubFromRequest(req);
+      const club = await getClubFromRequest(req, convex);
       if (!club) {
         return res.status(401).json({ success: false, error: 'Authentication required' });
+      }
+      if (club._supabaseEmail) {
+        return res.status(403).json({ success: false, needSignup: true, email: club._supabaseEmail });
       }
 
       const eventId = req.body?.eventId || req.query?.eventId;
@@ -420,28 +479,12 @@ export default async function handler(req, res) {
         return res.status(400).json({ success: false, error: 'eventId is required' });
       }
 
-      // Verify event belongs to this organization
-      const { data: event } = await supabase
-        .from('certvault_events')
-        .select('id')
-        .eq('id', eventId)
-        .eq('organization_id', club.organizationId)
-        .single();
-
+      const event = await convex.query(api.events.getByIdAndOrg, { id: eventId, organization_id: club.organizationId });
       if (!event) {
         return res.status(404).json({ success: false, error: 'Event not found' });
       }
 
-      // Delete event (certificates will cascade delete)
-      const { error } = await supabase
-        .from('certvault_events')
-        .delete()
-        .eq('id', eventId);
-
-      if (error) {
-        return res.status(500).json({ success: false, error: error.message });
-      }
-
+      await convex.mutation(api.events.remove, { id: eventId });
       return res.status(200).json({ success: true, message: 'Event deleted' });
     }
 
@@ -450,29 +493,27 @@ export default async function handler(req, res) {
       if (req.method !== 'POST') {
         return res.status(405).json({ success: false, error: 'Method not allowed' });
       }
-      const club = getClubFromRequest(req);
+      const club = await getClubFromRequest(req, convex);
       if (!club) {
         return res.status(401).json({ success: false, error: 'Authentication required' });
+      }
+      if (club._supabaseEmail) {
+        return res.status(403).json({ success: false, needSignup: true, email: club._supabaseEmail });
       }
       const { eventId, download_slug } = req.body || {};
       if (!eventId) {
         return res.status(400).json({ success: false, error: 'eventId is required' });
       }
       const slug = typeof download_slug === 'string' ? download_slug.trim().toLowerCase().replace(/[^a-z0-9-]/g, '') || null : null;
-      const { data: event, error } = await supabase
-        .from('certvault_events')
-        .update({ download_slug: slug })
-        .eq('id', eventId)
-        .eq('organization_id', club.organizationId)
-        .select()
-        .single();
-      if (error) {
-        return res.status(500).json({ success: false, error: error.message });
-      }
+      const event = await convex.mutation(api.events.updateDownloadSlug, {
+        id: eventId,
+        organization_id: club.organizationId,
+        download_slug: slug,
+      });
       if (!event) {
         return res.status(404).json({ success: false, error: 'Event not found' });
       }
-      return res.status(200).json({ success: true, event });
+      return res.status(200).json({ success: true, event: docToApi(event) });
     }
 
     // =====================
@@ -481,9 +522,12 @@ export default async function handler(req, res) {
 
     // GET: List certificates for an event
     if (action === 'list-certificates') {
-      const club = getClubFromRequest(req);
+      const club = await getClubFromRequest(req, convex);
       if (!club) {
         return res.status(401).json({ success: false, error: 'Authentication required' });
+      }
+      if (club._supabaseEmail) {
+        return res.status(403).json({ success: false, needSignup: true, email: club._supabaseEmail });
       }
 
       const eventId = req.query?.eventId;
@@ -491,29 +535,26 @@ export default async function handler(req, res) {
         return res.status(400).json({ success: false, error: 'eventId is required' });
       }
 
-      // Verify event belongs to this organization
-      const { data: event } = await supabase
-        .from('certvault_events')
-        .select('id, name')
-        .eq('id', eventId)
-        .eq('organization_id', club.organizationId)
-        .single();
-
+      const event = await convex.query(api.events.getByIdAndOrg, { id: eventId, organization_id: club.organizationId });
       if (!event) {
         return res.status(404).json({ success: false, error: 'Event not found' });
       }
 
-      const { data: certificates, error } = await supabase
-        .from('certvault_certificates')
-        .select('id, certificate_id, recipient_name, recipient_email, category, date_issued, status, pdf_url')
-        .eq('event_id', eventId)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        return res.status(500).json({ success: false, error: error.message });
-      }
-
-      return res.status(200).json({ success: true, event, certificates });
+      const certificates = await convex.query(api.certificates.listByEvent, { event_id: eventId });
+      return res.status(200).json({
+        success: true,
+        event: { id: event._id, name: event.name },
+        certificates: docsToApi(certificates).map((c) => ({
+          id: c.id,
+          certificate_id: c.certificate_id,
+          recipient_name: c.recipient_name,
+          recipient_email: c.recipient_email,
+          category: c.category,
+          date_issued: c.date_issued,
+          status: c.status,
+          pdf_url: c.pdf_url,
+        })),
+      });
     }
 
     // POST: Generate certificates from recipient list (with optional PDF generation)
@@ -522,9 +563,12 @@ export default async function handler(req, res) {
         return res.status(405).json({ success: false, error: 'Method not allowed' });
       }
 
-      const club = getClubFromRequest(req);
+      const club = await getClubFromRequest(req, convex);
       if (!club) {
         return res.status(401).json({ success: false, error: 'Authentication required' });
+      }
+      if (club._supabaseEmail) {
+        return res.status(403).json({ success: false, needSignup: true, email: club._supabaseEmail });
       }
 
       const { eventId, recipients, template, settings, generatePdf } = req.body || {};
@@ -537,23 +581,14 @@ export default async function handler(req, res) {
       }
 
       // Verify event belongs to this organization
-      const { data: event } = await supabase
-        .from('certvault_events')
-        .select('id, name')
-        .eq('id', eventId)
-        .eq('organization_id', club.organizationId)
-        .single();
+      const event = await convex.query(api.events.getByIdAndOrg, { id: eventId, organization_id: club.organizationId });
 
       if (!event) {
         return res.status(404).json({ success: false, error: 'Event not found' });
       }
 
       // Get organization info for Cloudinary folder
-      const { data: org } = await supabase
-        .from('certvault_organizations')
-        .select('slug')
-        .eq('id', club.organizationId)
-        .single();
+      const org = await convex.query(api.organizations.getById, { id: club.organizationId });
 
       const cloudinaryFolder = `certvault/${org?.slug || 'default'}/${event.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
 
@@ -563,6 +598,12 @@ export default async function handler(req, res) {
 
       // If template provided and generatePdf is true, use batch PDF generation
       if (template && generatePdf) {
+        if (!isPdfGenerationAvailable()) {
+          return res.status(503).json({
+            success: false,
+            error: 'PDF generation is not configured. Set CERTGEN_SERVICE_URL to your PDF generator service, or uncheck "Generate PDFs" to create certificate records only.',
+          });
+        }
         try {
           // Prepare recipients with certificate IDs
           const recipientsWithIds = recipients.map(r => ({
@@ -575,6 +616,7 @@ export default async function handler(req, res) {
           // Process in chunks of 50 to avoid timeouts
           const CHUNK_SIZE = 20;
           const pdfUrlMap = new Map();
+          const publicIdMap = new Map();
           let totalPdfsGenerated = 0;
 
           for (let i = 0; i < recipientsWithIds.length; i += CHUNK_SIZE) {
@@ -590,33 +632,32 @@ export default async function handler(req, res) {
 
             (pdfResult.results || []).forEach(r => {
               if (r.pdf_url) pdfUrlMap.set(r.certificate_id, r.pdf_url);
+              if (r.public_id) publicIdMap.set(r.certificate_id, r.public_id);
             });
             totalPdfsGenerated += (pdfResult.generated || 0);
           }
 
-          // Insert certificates into database with PDF URLs
+          // Insert certificates into database with PDF URLs and cloudinary_public_id
           for (const recipient of recipientsWithIds) {
             const pdfUrl = pdfUrlMap.get(recipient.certificate_id);
+            const cloudinaryPublicId = publicIdMap.get(recipient.certificate_id) || null;
 
-            const { data: cert, error } = await supabase
-              .from('certvault_certificates')
-              .insert({
-                certificate_id: recipient.certificate_id,
-                event_id: eventId,
-                organization_id: club.organizationId,
-                recipient_name: recipient.name,
-                recipient_email: recipient.email ? recipient.email.trim().toLowerCase() : null,
-                category: recipient.category,
-                status: 'valid',
-                pdf_url: pdfUrl || null,
-              })
-              .select()
-              .single();
+            const cert = await convex.mutation(api.certificates.insert, {
+              certificate_id: recipient.certificate_id,
+              event_id: eventId,
+              organization_id: club.organizationId,
+              recipient_name: recipient.name,
+              recipient_email: recipient.email ? recipient.email.trim().toLowerCase() : undefined,
+              category: recipient.category,
+              status: 'valid',
+              pdf_url: pdfUrl || undefined,
+              cloudinary_public_id: cloudinaryPublicId,
+            });
 
-            if (error) {
-              errors.push({ recipient, error: error.message });
+            if (cert) {
+              results.push(docToApi(cert));
             } else {
-              results.push(cert);
+              errors.push({ recipient, error: 'Insert failed' });
             }
           }
 
@@ -650,24 +691,20 @@ export default async function handler(req, res) {
 
         const certificateId = generateCertificateId();
 
-        const { data: cert, error } = await supabase
-          .from('certvault_certificates')
-          .insert({
-            certificate_id: certificateId,
-            event_id: eventId,
-            organization_id: club.organizationId,
-            recipient_name: name.trim(),
-            recipient_email: email ? email.trim().toLowerCase() : null,
-            category: category || 'Participant',
-            status: 'valid',
-          })
-          .select()
-          .single();
+        const cert = await convex.mutation(api.certificates.insert, {
+          certificate_id: certificateId,
+          event_id: eventId,
+          organization_id: club.organizationId,
+          recipient_name: name.trim(),
+          recipient_email: email ? email.trim().toLowerCase() : undefined,
+          category: category || 'Participant',
+          status: 'valid',
+        });
 
-        if (error) {
-          errors.push({ recipient, error: error.message });
+        if (cert) {
+          results.push(docToApi(cert));
         } else {
-          results.push(cert);
+          errors.push({ recipient, error: 'Insert failed' });
         }
       }
 
@@ -685,60 +722,46 @@ export default async function handler(req, res) {
       if (req.method !== 'POST') {
         return res.status(405).json({ success: false, error: 'Method not allowed' });
       }
-      const club = getClubFromRequest(req);
+      const club = await getClubFromRequest(req, convex);
       if (!club) {
         return res.status(401).json({ success: false, error: 'Authentication required' });
+      }
+      if (club._supabaseEmail) {
+        return res.status(403).json({ success: false, needSignup: true, email: club._supabaseEmail });
       }
       const { eventId, template, settings } = req.body || {};
       if (!eventId || !template) {
         return res.status(400).json({ success: false, error: 'eventId and template are required' });
       }
-      const { data: event } = await supabase
-        .from('certvault_events')
-        .select('id, name')
-        .eq('id', eventId)
-        .eq('organization_id', club.organizationId)
-        .single();
+      const event = await convex.query(api.events.getByIdAndOrg, { id: eventId, organization_id: club.organizationId });
       if (!event) {
         return res.status(404).json({ success: false, error: 'Event not found' });
       }
-      const { data: org } = await supabase
-        .from('certvault_organizations')
-        .select('slug')
-        .eq('id', club.organizationId)
-        .single();
+      const org = await convex.query(api.organizations.getById, { id: club.organizationId });
       const cloudinaryFolder = `certvault/${org?.slug || 'default'}/${event.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
 
-      const { data: allCerts } = await supabase
-        .from('certvault_certificates')
-        .select('id, certificate_id, recipient_name, pdf_url')
-        .eq('event_id', eventId)
-        .eq('organization_id', club.organizationId)
-        .eq('status', 'valid');
-
-      const needPdf = (allCerts || []).filter(c => !c.pdf_url);
+      const allCerts = await convex.query(api.certificates.listByEventForOrg, { event_id: eventId, organization_id: club.organizationId });
+      const needPdf = (allCerts || []).filter((c) => !c.pdf_url);
       if (needPdf.length === 0) {
         return res.status(200).json({ success: true, generated: 0, message: 'All certificates already have PDFs' });
       }
 
-      const recipients = needPdf.map(c => ({ name: c.recipient_name, certificate_id: c.certificate_id }));
-      
-      // Process in chunks of 50 to avoid timeouts
+      const recipients = needPdf.map((c) => ({ name: c.recipient_name, certificate_id: c.certificate_id }));
       const CHUNK_SIZE = 20;
       const pdfUrlMap = new Map();
+      const publicIdMap = new Map();
       const allErrors = [];
 
       try {
         for (let i = 0; i < recipients.length; i += CHUNK_SIZE) {
           const chunk = recipients.slice(i, i + CHUNK_SIZE);
-          console.log(`[CertVault] Generate-missing: Processing chunk ${Math.floor(i / CHUNK_SIZE) + 1}/${Math.ceil(recipients.length / CHUNK_SIZE)} (${chunk.length} PDFs)`);
-
           const pdfResult = await generateCertificateBatch(template, chunk, settings || {}, cloudinaryFolder);
-          (pdfResult.results || []).forEach(r => {
+          (pdfResult.results || []).forEach((r) => {
             if (r.pdf_url) pdfUrlMap.set(r.certificate_id, r.pdf_url);
+            if (r.public_id) publicIdMap.set(r.certificate_id, r.public_id);
           });
           if (pdfResult.errors) {
-            allErrors.push(...pdfResult.errors.map(e => ({ name: e.recipient?.name || 'unknown', error: e.error })));
+            allErrors.push(...pdfResult.errors.map((e) => ({ name: e.recipient?.name || 'unknown', error: e.error })));
           }
         }
       } catch (e) {
@@ -749,15 +772,15 @@ export default async function handler(req, res) {
       }
 
       let generated = 0;
-      const errs = allErrors;
-
       for (const cert of needPdf) {
         const pdfUrl = pdfUrlMap.get(cert.certificate_id);
+        const publicId = publicIdMap.get(cert.certificate_id);
         if (pdfUrl) {
-          await supabase
-            .from('certvault_certificates')
-            .update({ pdf_url: pdfUrl })
-            .eq('id', cert.id);
+          await convex.mutation(api.certificates.updatePdfByCertificateId, {
+            certificate_id: cert.certificate_id,
+            pdf_url: pdfUrl,
+            cloudinary_public_id: publicId || undefined,
+          });
           generated++;
         }
       }
@@ -765,8 +788,8 @@ export default async function handler(req, res) {
       return res.status(200).json({
         success: true,
         generated,
-        failed: errs.length,
-        errors: errs.length > 0 ? errs : undefined,
+        failed: allErrors.length,
+        errors: allErrors.length > 0 ? allErrors : undefined,
       });
     }
 
@@ -775,60 +798,46 @@ export default async function handler(req, res) {
       if (req.method !== 'POST') {
         return res.status(405).json({ success: false, error: 'Method not allowed' });
       }
-      const club = getClubFromRequest(req);
+      const club = await getClubFromRequest(req, convex);
       if (!club) {
         return res.status(401).json({ success: false, error: 'Authentication required' });
+      }
+      if (club._supabaseEmail) {
+        return res.status(403).json({ success: false, needSignup: true, email: club._supabaseEmail });
       }
       const { eventId, template, settings } = req.body || {};
       if (!eventId || !template) {
         return res.status(400).json({ success: false, error: 'eventId and template are required' });
       }
-      const { data: event } = await supabase
-        .from('certvault_events')
-        .select('id, name')
-        .eq('id', eventId)
-        .eq('organization_id', club.organizationId)
-        .single();
+      const event = await convex.query(api.events.getByIdAndOrg, { id: eventId, organization_id: club.organizationId });
       if (!event) {
         return res.status(404).json({ success: false, error: 'Event not found' });
       }
-      const { data: org } = await supabase
-        .from('certvault_organizations')
-        .select('slug')
-        .eq('id', club.organizationId)
-        .single();
+      const org = await convex.query(api.organizations.getById, { id: club.organizationId });
       const cloudinaryFolder = `certvault/${org?.slug || 'default'}/${event.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
 
-      const { data: allCerts } = await supabase
-        .from('certvault_certificates')
-        .select('id, certificate_id, recipient_name, pdf_url')
-        .eq('event_id', eventId)
-        .eq('organization_id', club.organizationId)
-        .eq('status', 'valid');
-
-      const certs = allCerts || [];
-      if (certs.length === 0) {
+      const certs = await convex.query(api.certificates.listByEventForOrg, { event_id: eventId, organization_id: club.organizationId });
+      const validCerts = (certs || []).filter((c) => c.status === 'valid');
+      if (validCerts.length === 0) {
         return res.status(200).json({ success: true, generated: 0, message: 'No certificates to regenerate' });
       }
 
-      const recipients = certs.map(c => ({ name: c.recipient_name, certificate_id: c.certificate_id }));
-      
-      // Process in chunks of 50 to avoid timeouts
+      const recipients = validCerts.map((c) => ({ name: c.recipient_name, certificate_id: c.certificate_id }));
       const CHUNK_SIZE = 20;
       const pdfUrlMap = new Map();
+      const publicIdMap = new Map();
       const allErrors = [];
 
       try {
         for (let i = 0; i < recipients.length; i += CHUNK_SIZE) {
           const chunk = recipients.slice(i, i + CHUNK_SIZE);
-          console.log(`[CertVault] Regenerate-all: Processing chunk ${Math.floor(i / CHUNK_SIZE) + 1}/${Math.ceil(recipients.length / CHUNK_SIZE)} (${chunk.length} PDFs)`);
-
           const pdfResult = await generateCertificateBatch(template, chunk, settings || {}, cloudinaryFolder);
-          (pdfResult.results || []).forEach(r => {
+          (pdfResult.results || []).forEach((r) => {
             if (r.pdf_url) pdfUrlMap.set(r.certificate_id, r.pdf_url);
+            if (r.public_id) publicIdMap.set(r.certificate_id, r.public_id);
           });
           if (pdfResult.errors) {
-            allErrors.push(...pdfResult.errors.map(e => ({ name: e.recipient?.name || 'unknown', error: e.error })));
+            allErrors.push(...pdfResult.errors.map((e) => ({ name: e.recipient?.name || 'unknown', error: e.error })));
           }
         }
       } catch (e) {
@@ -839,15 +848,15 @@ export default async function handler(req, res) {
       }
 
       let generated = 0;
-      const errs = allErrors;
-
-      for (const cert of certs) {
+      for (const cert of validCerts) {
         const pdfUrl = pdfUrlMap.get(cert.certificate_id);
+        const publicId = publicIdMap.get(cert.certificate_id);
         if (pdfUrl) {
-          await supabase
-            .from('certvault_certificates')
-            .update({ pdf_url: pdfUrl })
-            .eq('id', cert.id);
+          await convex.mutation(api.certificates.updatePdfByCertificateId, {
+            certificate_id: cert.certificate_id,
+            pdf_url: pdfUrl,
+            cloudinary_public_id: publicId || undefined,
+          });
           generated++;
         }
       }
@@ -855,8 +864,8 @@ export default async function handler(req, res) {
       return res.status(200).json({
         success: true,
         generated,
-        failed: errs.length,
-        errors: errs.length > 0 ? errs : undefined,
+        failed: allErrors.length,
+        errors: allErrors.length > 0 ? allErrors : undefined,
       });
     }
 
@@ -916,33 +925,12 @@ export default async function handler(req, res) {
         return res.status(400).json({ valid: false, error: 'Certificate ID required' });
       }
 
-      // Query certificate from database
-      const { data: cert, error } = await supabase
-        .from('certvault_certificates')
-        .select(`
-          certificate_id,
-          recipient_name,
-          recipient_email,
-          category,
-          date_issued,
-          status,
-          pdf_url,
-          certvault_events (
-            name,
-            event_date,
-            certvault_organizations (
-              name
-            )
-          )
-        `)
-        .eq('certificate_id', certificateId)
-        .single();
+      const cert = await convex.query(api.certificates.getByCertificateId, { certificate_id: certificateId });
 
-      if (error || !cert) {
+      if (!cert) {
         return res.status(200).json({ valid: false });
       }
 
-      // Check if revoked
       if (cert.status === 'revoked') {
         return res.status(200).json({
           valid: false,
@@ -951,16 +939,18 @@ export default async function handler(req, res) {
         });
       }
 
-      // Return certificate details
+      const event = await convex.query(api.events.getById, { id: cert.event_id });
+      const org = event ? await convex.query(api.organizations.getById, { id: cert.organization_id }) : null;
+
       return res.status(200).json({
         valid: true,
         certificate_id: cert.certificate_id,
         recipient_name: cert.recipient_name,
         category: cert.category,
         date_issued: cert.date_issued,
-        event_name: cert.certvault_events?.name,
-        event_date: cert.certvault_events?.event_date,
-        issuing_organization: cert.certvault_events?.certvault_organizations?.name,
+        event_name: event?.name,
+        event_date: event?.event_date,
+        issuing_organization: org?.name,
         pdf_url: cert.pdf_url,
       });
     }
@@ -975,44 +965,42 @@ export default async function handler(req, res) {
         return res.status(400).json({ success: false, error: 'eventSlug and names array are required' });
       }
       const slug = String(eventSlug).trim().toLowerCase();
-      const { data: event } = await supabase
-        .from('certvault_events')
-        .select('id, name')
-        .eq('download_slug', slug)
-        .single();
+      const event = await convex.query(api.events.getByDownloadSlug, { download_slug: slug });
       if (!event) {
         return res.status(404).json({ success: false, error: 'Event not found' });
       }
-      const { data: certificates, error } = await supabase
-        .from('certvault_certificates')
-        .select('id, certificate_id, recipient_name, recipient_email, category, status, pdf_url')
-        .eq('event_id', event.id)
-        .eq('status', 'valid');
-      if (error) {
-        return res.status(500).json({ success: false, error: error.message });
-      }
+      const certificates = await convex.query(api.certificates.listByEventId, { event_id: event._id });
+      const validCerts = (certificates || []).filter((c) => c.status === 'valid');
 
-      // Treat each entry as either a name OR an email, case-insensitive
       const queries = (names || [])
-        .map(n => String(n || '').trim().toLowerCase())
+        .map((n) => String(n || '').trim().toLowerCase())
         .filter(Boolean);
       const querySet = new Set(queries);
 
-      const matched = (certificates || []).filter(c => {
+      const matched = validCerts.filter((c) => {
         const rn = String(c.recipient_name || '').trim().toLowerCase();
         const re = String(c.recipient_email || '').trim().toLowerCase();
         return querySet.has(rn) || (re && querySet.has(re));
       });
 
-      const notFound = queries.filter(q => !(certificates || []).some(c => {
+      const notFound = queries.filter((q) => !validCerts.some((c) => {
         const rn = String(c.recipient_name || '').trim().toLowerCase();
         const re = String(c.recipient_email || '').trim().toLowerCase();
         return q === rn || (re && q === re);
       }));
+
       return res.status(200).json({
         success: true,
-        event: { id: event.id, name: event.name },
-        matched,
+        event: { id: event._id, name: event.name },
+        matched: matched.map((c) => ({
+          id: c._id,
+          certificate_id: c.certificate_id,
+          recipient_name: c.recipient_name,
+          recipient_email: c.recipient_email,
+          category: c.category,
+          status: c.status,
+          pdf_url: c.pdf_url,
+        })),
         notFound,
       });
     }
@@ -1106,17 +1094,13 @@ export default async function handler(req, res) {
         });
       }
 
-      // Update status to revoked
-      const { error } = await supabase
-        .from('certvault_certificates')
-        .update({ status: 'revoked' })
-        .eq('certificate_id', certificateId);
+      const updated = await convex.mutation(api.certificates.updateStatus, {
+        certificate_id: certificateId,
+        status: 'revoked',
+      });
 
-      if (error) {
-        return res.status(500).json({
-          success: false,
-          error: error.message
-        });
+      if (!updated) {
+        return res.status(404).json({ success: false, error: 'Certificate not found' });
       }
 
       return res.status(200).json({
@@ -1140,42 +1124,24 @@ export default async function handler(req, res) {
         });
       }
 
-      // Get certificate with cloudinary_public_id
-      const { data: cert, error: fetchError } = await supabase
-        .from('certvault_certificates')
-        .select('cloudinary_public_id')
-        .eq('certificate_id', certificateId)
-        .single();
+      const cert = await convex.query(api.certificates.getByCertificateId, { certificate_id: certificateId });
 
-      if (fetchError || !cert) {
+      if (!cert) {
         return res.status(404).json({
           success: false,
           error: 'Certificate not found'
         });
       }
 
-      // Delete from Cloudinary if public_id exists
       if (cert.cloudinary_public_id && isCloudinaryConfigured()) {
         try {
           await deleteCertificate(cert.cloudinary_public_id);
         } catch (cloudinaryError) {
           console.error('[CertVault] Cloudinary delete error:', cloudinaryError);
-          // Continue with database deletion even if Cloudinary fails
         }
       }
 
-      // Delete from database
-      const { error: deleteError } = await supabase
-        .from('certvault_certificates')
-        .delete()
-        .eq('certificate_id', certificateId);
-
-      if (deleteError) {
-        return res.status(500).json({
-          success: false,
-          error: deleteError.message
-        });
-      }
+      await convex.mutation(api.certificates.deleteByCertificateId, { certificate_id: certificateId });
 
       return res.status(200).json({
         success: true,
@@ -1189,9 +1155,12 @@ export default async function handler(req, res) {
         return res.status(405).json({ success: false, error: 'Method not allowed' });
       }
 
-      const club = getClubFromRequest(req);
+      const club = await getClubFromRequest(req, convex);
       if (!club) {
         return res.status(401).json({ success: false, error: 'Authentication required' });
+      }
+      if (club._supabaseEmail) {
+        return res.status(403).json({ success: false, needSignup: true, email: club._supabaseEmail });
       }
 
       const { eventId, names } = req.body || {};
@@ -1199,39 +1168,26 @@ export default async function handler(req, res) {
         return res.status(400).json({ success: false, error: 'eventId and names array are required' });
       }
 
-      const { data: event } = await supabase
-        .from('certvault_events')
-        .select('id, name')
-        .eq('id', eventId)
-        .eq('organization_id', club.organizationId)
-        .single();
+      const event = await convex.query(api.events.getByIdAndOrg, { id: eventId, organization_id: club.organizationId });
 
       if (!event) {
         return res.status(404).json({ success: false, error: 'Event not found' });
       }
 
-      const { data: certificates, error } = await supabase
-        .from('certvault_certificates')
-        .select('id, certificate_id, recipient_name, recipient_email, category, status, pdf_url')
-        .eq('event_id', eventId);
+      const certificates = await convex.query(api.certificates.listByEvent, { event_id: eventId });
 
-      if (error) {
-        return res.status(500).json({ success: false, error: error.message });
-      }
-
-      // Treat each entry as either a name OR an email, case-insensitive
       const queries = (names || [])
-        .map(n => String(n || '').trim().toLowerCase())
+        .map((n) => String(n || '').trim().toLowerCase())
         .filter(Boolean);
       const querySet = new Set(queries);
 
-      const matched = (certificates || []).filter(c => {
+      const matched = (certificates || []).filter((c) => {
         const rn = String(c.recipient_name || '').trim().toLowerCase();
         const re = String(c.recipient_email || '').trim().toLowerCase();
         return querySet.has(rn) || (re && querySet.has(re));
       });
 
-      const notFound = queries.filter(q => !(certificates || []).some(c => {
+      const notFound = queries.filter((q) => !(certificates || []).some((c) => {
         const rn = String(c.recipient_name || '').trim().toLowerCase();
         const re = String(c.recipient_email || '').trim().toLowerCase();
         return q === rn || (re && q === re);
@@ -1239,8 +1195,16 @@ export default async function handler(req, res) {
 
       return res.status(200).json({
         success: true,
-        event: { id: event.id, name: event.name },
-        matched,
+        event: { id: event._id, name: event.name },
+        matched: matched.map((c) => ({
+          id: c._id,
+          certificate_id: c.certificate_id,
+          recipient_name: c.recipient_name,
+          recipient_email: c.recipient_email,
+          category: c.category,
+          status: c.status,
+          pdf_url: c.pdf_url,
+        })),
         notFound,
       });
     }

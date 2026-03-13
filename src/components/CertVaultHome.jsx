@@ -1,43 +1,34 @@
 /**
- * CertVault Home: Certifier.io-style landing page.
- * Professional certificate issuance, verification, and bulk generation.
+ * CertVault Home – built from Stitch screen-1 HTML (stitch-assets/screens).
+ * Uses Tailwind + Stitch CSS variables and .apple-card, .floating-cert, .bg-mesh.
  */
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import CertVaultLayout from './CertVaultLayout';
-import { certVaultTheme as theme } from '../theme';
-
-const WORKFLOW = [
-  { label: 'Design', desc: 'Upload templates, position text, customize fonts & colors.' },
-  { label: 'Generate', desc: 'Create certificates in bulk from CSV—unique IDs assigned automatically.' },
-  { label: 'Send', desc: 'Share PDFs via Cloudinary CDN. Recipients get instant access.' },
-  { label: 'Verify', desc: 'Public verification by Certificate ID. No login required.' },
-];
 
 const FEATURES = [
-  { title: 'Digital Certificates', desc: 'Issue digital certificates with unique IDs. Upload templates, generate PDFs in bulk, host online.', link: '/for-clubs', cta: 'Start for free' },
-  { title: 'Public Verification', desc: 'Anyone can verify a certificate instantly using the Certificate ID. Trusted, transparent, and secure.', link: '/verify', cta: 'Verify now' },
-  { title: 'Bulk Generator', desc: 'Generate multiple certificates from CSV. Upload template, set positions, export PDFs to Cloudinary.', link: '/for-clubs', cta: 'Learn more' },
+  { icon: 'description', title: 'Digital Certificates', desc: 'High-fidelity digital credentials that are tamper-proof and visually stunning across all devices.', link: '/for-clubs' },
+  { icon: 'workspace_premium', title: 'Public Verification', desc: 'Instant QR-based verification that anyone can use to validate the authenticity of a document.', link: '/verify' },
+  { icon: 'dynamic_feed', title: 'Bulk Generator', desc: 'Issue thousands of personalized certificates in seconds with our high-speed automation engine.', link: '/for-clubs' },
 ];
 
-const BULK_FEATURES = [
-  'Generate certificates in bulk from CSV (name, email, category)',
-  'Visual drag-and-drop text positioning on template',
-  'PDF export and Cloudinary hosting',
-  'Unique Certificate ID per credential',
-  'Instant public verification by ID',
+const WORKFLOW = [
+  { label: 'Design', desc: 'Create your unique template using our professional design tools.' },
+  { label: 'Generate', desc: 'Populate data automatically from your existing records and CSVs.' },
+  { label: 'Send', desc: 'Distribute securely via encrypted email or direct public links.' },
+  { label: 'Verify', desc: 'Recipients and third-parties verify validity in one single click.' },
 ];
 
 const BENEFITS = [
-  { title: 'Save time', desc: 'No manual PDF creation. Bulk generate, bulk upload. Focus on your event, not paperwork.' },
-  { title: 'Verifiable', desc: 'Every certificate has a unique ID. Recipients and employers can verify authenticity instantly.' },
-  { title: 'Professional', desc: 'Upload your branded template. Position text visually. Output polished PDFs.' },
+  { icon: 'speed', title: 'Save time', desc: 'Automated workflows reduce administrative overhead by up to 90% per batch.' },
+  { icon: 'shield', title: 'Verifiable', desc: 'Cryptographically secure signatures ensure every certificate is authentic and immutable.' },
+  { icon: 'stars', title: 'Professional', desc: 'Premium presentation that matches the prestige of your global organization.' },
 ];
 
-const FAQ = [
-  { q: 'Can I generate certificates in bulk?', a: 'Yes. Add recipients via CSV (name, email, category), upload your template, position the name text visually, and generate. All certificates get unique IDs and optional PDF export to Cloudinary.' },
-  { q: 'How do recipients verify certificates?', a: 'Share the Certificate ID (e.g. CV-2025-XXXXXX). Anyone can verify at /verify—no login required.' },
-  { q: 'Who issues the certificates?', a: 'Clubs and organizations create accounts and issue certificates. CertVault hosts records and provides verification. Certificates are issued by the named organization.' },
+const FAQ_ITEMS = [
+  { q: 'How secure is the data storage?', a: 'CertVault uses industry-standard encryption and secure cloud storage. Your data and certificate records are protected.' },
+  { q: 'Can we integrate with our existing CRM?', a: 'Yes. CertVault supports CSV import and can integrate with your existing participant data. Contact us for API options.' },
+  { q: 'What happens if we stop using CertVault?', a: 'Existing certificates remain verifiable. You can export your data. Verification links continue to work.' },
 ];
 
 export default function CertVaultHome() {
@@ -45,405 +36,201 @@ export default function CertVaultHome() {
 
   return (
     <CertVaultLayout>
-      <style>{`
-        @media (max-width: 900px) {
-          .certvault-feature-grid { grid-template-columns: 1fr !important; }
-          .certvault-benefits-grid { grid-template-columns: 1fr !important; }
-          .certvault-workflow { flex-direction: column !important; }
-          .certvault-cta-row { flex-direction: column !important; gap: 10px !important; }
-          .certvault-cta-row a { width: 100% !important; text-align: center !important; font-size: 13px !important; padding: 10px 18px !important; white-space: nowrap !important; }
-        }
-        @media (max-width: 768px) {
-          .certvault-hero-title { font-size: 22px !important; line-height: 1.2 !important; }
-          .certvault-hero-subtext { font-size: 13px !important; line-height: 1.4 !important; }
-          .certvault-section-title { font-size: 18px !important; white-space: nowrap !important; }
-          .certvault-trusted-logos { flex-wrap: wrap !important; justify-content: center !important; gap: 8px !important; }
-          .certvault-trusted-logo { font-size: 12px !important; white-space: nowrap !important; }
-          .certvault-feature-title { font-size: 16px !important; }
-          .certvault-feature-desc { font-size: 13px !important; }
-          .certvault-workflow-label { font-size: 14px !important; white-space: nowrap !important; }
-          .certvault-workflow-desc { font-size: 12px !important; }
-          .certvault-bulk-item { font-size: 13px !important; }
-          .certvault-benefit-title { font-size: 15px !important; white-space: nowrap !important; }
-          .certvault-benefit-desc { font-size: 12px !important; }
-        }
-      `}</style>
-      {/* Hero */}
-      <section style={styles.hero}>
-        <h1 className="certvault-hero-title" style={styles.heroTitle}>
-          Professional Certificate Maker: Create & Verify Digital Certificates
-        </h1>
-        <p className="certvault-hero-subtext" style={styles.heroSubtext}>
-          Issue branded certificates, generate in bulk from CSV, and let anyone verify authenticity. 
-          Hosted and verified via CertVault—by GradeX.
-        </p>
-        <div className="certvault-cta-row" style={styles.ctaRow}>
-          <Link to="/for-clubs" style={styles.ctaPrimary}>
-            Start for free
-          </Link>
-          <Link to="/verify" style={styles.ctaSecondary}>
-            Verify Certificate
-          </Link>
-        </div>
-      </section>
-
-      {/* Trusted by */}
-      <section style={styles.trusted}>
-        <p style={styles.trustedLabel}>Trusted by clubs & organizations</p>
-        <div className="certvault-trusted-logos" style={styles.trustedLogos}>
-          <span className="certvault-trusted-logo" style={styles.trustedLogo}>IEEE SRM</span>
-          <span className="certvault-trusted-logo" style={styles.trustedLogo}>GradeX</span>
-          <span className="certvault-trusted-logo" style={styles.trustedLogo}>Student Clubs</span>
-        </div>
-      </section>
-
-      {/* Feature cards - Certifier style, 3 side by side */}
-      <section style={styles.section}>
-        <h2 className="certvault-section-title" style={styles.sectionTitle}>The complete certificate platform</h2>
-        <p style={styles.sectionSub}>CertVault helps you design, generate, send, and verify digital credentials.</p>
-        <div className="certvault-feature-grid" style={styles.featureGrid}>
-          {FEATURES.map((f, i) => (
-            <div key={i} style={styles.featureCard}>
-              <h3 className="certvault-feature-title" style={styles.featureTitle}>{f.title}</h3>
-              <p className="certvault-feature-desc" style={styles.featureDesc}>{f.desc}</p>
-              <Link to={f.link} style={styles.featureLink}>{f.cta} →</Link>
+      <main className="w-full max-w-[2560px] mx-auto overflow-hidden">
+        {/* Hero */}
+        <section className="relative pt-32 pb-48 bg-mesh">
+          <div className="max-w-[720px] mx-auto text-center relative z-10 px-6">
+            <h1 className="text-4xl sm:text-5xl md:text-[56px] font-bold tracking-[-0.03em] leading-[1.05] mb-6 text-[var(--apple-text-primary)]">
+              Your achievements, securely anchored.
+            </h1>
+            <p className="text-[19px] md:text-[21px] text-[var(--apple-text-secondary)] leading-relaxed mb-10 max-w-[580px] mx-auto">
+              The definitive vault for professional certifications and credentials. Issue, manage, and verify with absolute confidence.
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link to="/for-clubs" className="bg-[var(--apple-accent)] text-white px-9 py-4 rounded-full font-medium text-[17px] hover:brightness-110 transition-all min-w-[180px] text-center">
+                Get Started
+              </Link>
+              <Link to="/verify" className="border border-[var(--apple-accent)] text-[var(--apple-accent)] px-9 py-4 rounded-full font-medium text-[17px] hover:bg-blue-50/50 transition-all min-w-[180px] text-center">
+                View Demo
+              </Link>
             </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Workflow: Design → Generate → Send → Verify */}
-      <section style={styles.section}>
-        <h2 className="certvault-section-title" style={styles.sectionTitle}>How it works</h2>
-        <div className="certvault-workflow" style={styles.workflow}>
-          {WORKFLOW.map((w, i) => (
-            <div key={i} style={styles.workflowStep}>
-              <span style={styles.workflowNum}>{i + 1}</span>
-              <h4 className="certvault-workflow-label" style={styles.workflowLabel}>{w.label}</h4>
-              <p className="certvault-workflow-desc" style={styles.workflowDesc}>{w.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Bulk generator features */}
-      <section style={styles.section}>
-        <h2 style={styles.sectionTitle}>Bulk certificate generator</h2>
-        <p style={styles.sectionSub}>Generate, issue, and verify certificates in bulk.</p>
-        <div style={styles.bulkList}>
-          {BULK_FEATURES.map((item, i) => (
-            <div key={i} className="certvault-bulk-item" style={styles.bulkItem}>
-              <span style={styles.check}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="20 6 9 17 4 12"></polyline>
-                </svg>
-              </span>
-              <span>{item}</span>
-            </div>
-          ))}
-        </div>
-        <div style={styles.ctaRow}>
-          <Link to="/login" style={styles.ctaPrimary}>Club Login</Link>
-        </div>
-      </section>
-
-      {/* Benefits */}
-      <section style={styles.section}>
-        <h2 className="certvault-section-title" style={styles.sectionTitle}>Benefits of CertVault</h2>
-        <div className="certvault-benefits-grid" style={styles.benefitsGrid}>
-          {BENEFITS.map((b, i) => (
-            <div key={i} style={styles.benefitCard}>
-              <h4 className="certvault-benefit-title" style={styles.benefitTitle}>{b.title}</h4>
-              <p className="certvault-benefit-desc" style={styles.benefitDesc}>{b.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* FAQ */}
-      <section style={styles.section}>
-        <h2 style={styles.sectionTitle}>FAQ</h2>
-        <div style={styles.faqList}>
-          {FAQ.map((item, i) => (
-            <div
-              key={i}
-              style={styles.faqItem}
-              onClick={() => setOpenFaq(openFaq === i ? null : i)}
-            >
-              <div style={styles.faqQuestion}>
-                <span>{item.q}</span>
-                <span style={styles.faqIcon}>{openFaq === i ? '−' : '+'}</span>
+          </div>
+          <div className="absolute inset-0 pointer-events-none overflow-hidden hidden xl:block">
+            <div className="floating-cert absolute left-[15%] top-[20%] w-72 h-48 apple-card p-6 rotate-[-6deg] opacity-40">
+              <div className="flex justify-between items-start mb-8">
+                <div className="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center text-[var(--apple-accent)]">
+                  <span className="material-symbols-outlined text-sm">workspace_premium</span>
+                </div>
+                <span className="text-[10px] font-mono text-slate-400">ID: CV-8829-X</span>
               </div>
-              {openFaq === i && <p style={styles.faqAnswer}>{item.a}</p>}
+              <div className="h-2 w-32 bg-slate-100 rounded-full mb-2" />
+              <div className="h-2 w-20 bg-slate-50 rounded-full" />
             </div>
-          ))}
-        </div>
-      </section>
+            <div className="floating-cert absolute right-[12%] top-[15%] w-72 h-48 apple-card p-6 rotate-[8deg] opacity-40" style={{ animationDelay: '-2s' }}>
+              <div className="flex justify-between items-start mb-8">
+                <div className="w-10 h-10 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-600">
+                  <span className="material-symbols-outlined text-sm">verified</span>
+                </div>
+                <span className="text-[10px] font-mono text-slate-400">ID: CV-4412-M</span>
+              </div>
+              <div className="h-2 w-24 bg-slate-100 rounded-full mb-2" />
+              <div className="h-2 w-40 bg-slate-50 rounded-full" />
+            </div>
+          </div>
+        </section>
 
-      {/* Final CTA */}
-      <section style={styles.finalCta}>
-        <h2 style={styles.finalTitle}>Ready to issue certificates?</h2>
-        <p style={styles.finalSub}>Join clubs and organizations using CertVault.</p>
-        <div style={styles.ctaRow}>
-          <Link to="/for-clubs" style={styles.ctaPrimary}>Start for free</Link>
-          <Link to="/verify" style={styles.ctaSecondary}>Verify Certificate</Link>
-        </div>
-      </section>
+        {/* Trusted by */}
+        <section className="border-t border-[var(--apple-border)] bg-white">
+          <div className="max-w-[980px] mx-auto py-16 px-6">
+            <p className="text-center text-[12px] font-semibold text-[var(--apple-text-secondary)] uppercase tracking-[0.2em] mb-12">Trusted by global leading institutions</p>
+            <div className="flex flex-wrap items-center justify-center gap-20 opacity-40 grayscale">
+              <span className="text-2xl font-bold tracking-tighter">IEEE CS SRM</span>
+              <div className="flex items-center gap-3">
+                <span className="material-symbols-outlined text-3xl">groups</span>
+                <span className="text-2xl font-bold">Student Clubs</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Mass mailing */}
+        <section className="bg-white">
+          <div className="max-w-[980px] mx-auto py-[120px] px-6 grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+            <div className="apple-card p-12 bg-[#fbfbfd] border-none shadow-none relative overflow-hidden group">
+              <div className="absolute top-0 right-0 p-8">
+                <span className="material-symbols-outlined text-[var(--apple-accent)] text-6xl opacity-10 group-hover:scale-110 transition-transform duration-500">mail</span>
+              </div>
+              <div className="space-y-4 relative z-10">
+                <div className="flex items-center gap-4 bg-white p-4 rounded-xl border border-[#e8e8ed] shadow-sm transform translate-x-4">
+                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-[var(--apple-accent)]">
+                    <span className="material-symbols-outlined text-sm">send</span>
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold">Bulk Distribution</p>
+                    <p className="text-[10px] text-[var(--apple-text-secondary)]">Sending 1,200 certificates...</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 bg-white p-4 rounded-xl border border-[#e8e8ed] shadow-sm transform translate-x-12">
+                  <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600">
+                    <span className="material-symbols-outlined text-sm">check_circle</span>
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold">Template Applied</p>
+                    <p className="text-[10px] text-[var(--apple-text-secondary)]">Custom branding active</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 bg-white p-4 rounded-xl border border-[#e8e8ed] shadow-sm transform translate-x-4">
+                  <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">
+                    <span className="material-symbols-outlined text-sm">schedule</span>
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold">Automatic Delivery</p>
+                    <p className="text-[10px] text-[var(--apple-text-secondary)]">Scheduled for immediate release</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="space-y-8">
+              <h2 className="text-[40px] font-bold tracking-tight leading-tight">Send certificates instantly to everyone.</h2>
+              <p className="text-[18px] text-[var(--apple-text-secondary)] leading-relaxed">
+                Streamline your entire certification workflow. Our mass mailing engine handles automatic delivery, custom email templates, and bulk processing with a single click.
+              </p>
+              <ul className="space-y-4">
+                {['Automatic multi-recipient delivery', 'Fully customizable HTML templates', 'Bulk mailing tracking & analytics'].map((item, i) => (
+                  <li key={i} className="flex items-center gap-3">
+                    <span className="material-symbols-outlined text-blue-500">check_circle</span>
+                    <span className="text-[17px] font-medium">{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        {/* The Complete Platform */}
+        <section className="max-w-[980px] mx-auto py-[120px] px-6">
+          <div className="text-center mb-20">
+            <h2 className="text-[40px] font-bold tracking-tight mb-4">The Complete Platform</h2>
+            <p className="text-[19px] text-[var(--apple-text-secondary)]">Everything you need to issue and manage credentials.</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {FEATURES.map((f, i) => (
+              <div key={i} className="apple-card p-12 flex flex-col h-full">
+                <span className={`material-symbols-outlined text-[var(--apple-accent)] text-5xl mb-8`}>{f.icon}</span>
+                <h3 className="text-2xl font-bold mb-4">{f.title}</h3>
+                <p className="text-[var(--apple-text-secondary)] text-[17px] leading-relaxed mb-8">{f.desc}</p>
+                <Link to={f.link} className="mt-auto text-[var(--apple-accent)] font-semibold inline-flex items-center group text-[17px]">
+                  Learn more <span className="material-symbols-outlined text-sm ml-1 group-hover:translate-x-1 transition-transform">arrow_forward_ios</span>
+                </Link>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* How It Works */}
+        <section className="bg-[#ffffff] border-y border-[var(--apple-border)]">
+          <div className="max-w-[980px] mx-auto py-[120px] px-6">
+            <div className="text-center mb-24">
+              <h2 className="text-[40px] font-bold tracking-tight mb-4">How It Works</h2>
+              <p className="text-[19px] text-[var(--apple-text-secondary)]">Four steps to absolute credential security.</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-16">
+              {WORKFLOW.map((w, i) => (
+                <div key={i} className="text-center group">
+                  <div className="w-16 h-16 bg-[#f5f5f7] rounded-full flex items-center justify-center mx-auto mb-8 text-2xl font-bold group-hover:bg-[var(--apple-accent)] group-hover:text-white transition-all duration-300">{i + 1}</div>
+                  <h4 className="font-bold text-xl mb-3">{w.label}</h4>
+                  <p className="text-[var(--apple-text-secondary)] text-[16px] leading-relaxed px-4">{w.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Benefits + FAQ */}
+        <section className="max-w-[980px] mx-auto py-[120px] px-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-40">
+            {BENEFITS.map((b, i) => (
+              <div key={i} className="apple-card p-10">
+                <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center mb-6">
+                  <span className="material-symbols-outlined text-[var(--apple-accent)]">{b.icon}</span>
+                </div>
+                <h3 className="font-bold text-xl mb-4">{b.title}</h3>
+                <p className="text-[var(--apple-text-secondary)] text-[17px] leading-relaxed">{b.desc}</p>
+              </div>
+            ))}
+          </div>
+          <div className="max-w-[720px] mx-auto">
+            <h2 className="text-[32px] font-bold mb-12 text-center">Frequently Asked Questions</h2>
+            <div className="space-y-2">
+              {FAQ_ITEMS.map((item, i) => (
+                <div key={i} className="border-b border-[var(--apple-border)] py-6 group cursor-pointer" onClick={() => setOpenFaq(openFaq === i ? null : i)}>
+                  <div className="flex justify-between items-center text-left font-semibold text-lg group-hover:text-[var(--apple-accent)] transition-colors">
+                    <span>{item.q}</span>
+                    <span className="material-symbols-outlined text-[var(--apple-text-secondary)]">{openFaq === i ? 'expand_less' : 'expand_more'}</span>
+                  </div>
+                  {openFaq === i && <p className="text-[var(--apple-text-secondary)] text-[17px] mt-4 leading-relaxed">{item.a}</p>}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Final CTA */}
+        <section className="max-w-[980px] mx-auto pb-32 px-6">
+          <div className="apple-card bg-white p-24 text-center">
+            <h2 className="text-[48px] font-bold tracking-tight mb-10 leading-none">Ready to issue certificates?</h2>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
+              <Link to="/for-clubs" className="bg-[var(--apple-accent)] text-white px-10 py-4 rounded-full font-medium text-[19px] hover:brightness-110 transition-all shadow-lg shadow-blue-500/20">
+                Start for Free
+              </Link>
+              <Link to="/verify" className="bg-white border border-[#e8e8ed] text-[var(--apple-text-primary)] px-10 py-4 rounded-full font-medium text-[19px] hover:bg-slate-50 transition-all inline-flex items-center">
+                Verify Certificate
+              </Link>
+            </div>
+            <p className="mt-8 text-[var(--apple-text-secondary)] text-sm">No credit card required for the free tier.</p>
+          </div>
+        </section>
+      </main>
     </CertVaultLayout>
   );
 }
-
-const styles = {
-  hero: {
-    textAlign: 'center',
-    padding: '64px 24px 80px',
-  },
-  heroTitle: {
-    fontFamily: "'AmericanCaptain', 'Bebas Neue', sans-serif",
-    fontSize: 'clamp(28px, 4.5vw, 44px)',
-    fontWeight: 400,
-    letterSpacing: '0.04em',
-    color: theme.text,
-    margin: '0 0 20px',
-    lineHeight: 1.15,
-    maxWidth: 800,
-    marginLeft: 'auto',
-    marginRight: 'auto',
-  },
-  heroSubtext: {
-    fontFamily: '"Inter", "Space Grotesk", sans-serif',
-    fontSize: 'clamp(16px, 2vw, 19px)',
-    color: theme.textSecondary,
-    margin: '0 auto 36px',
-    maxWidth: 640,
-    lineHeight: 1.6,
-  },
-  ctaRow: {
-    display: 'flex',
-    gap: 16,
-    justifyContent: 'center',
-    flexWrap: 'wrap',
-  },
-  ctaPrimary: {
-    display: 'inline-block',
-    padding: '14px 28px',
-    backgroundColor: theme.accent,
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 600,
-    textDecoration: 'none',
-    borderRadius: 8,
-    transition: 'all 0.2s ease',
-  },
-  ctaSecondary: {
-    display: 'inline-block',
-    padding: '14px 28px',
-    backgroundColor: 'transparent',
-    color: theme.accent,
-    fontSize: 16,
-    fontWeight: 600,
-    textDecoration: 'none',
-    borderRadius: 8,
-    border: `1px solid ${theme.border}`,
-    transition: 'all 0.2s ease',
-  },
-  trusted: {
-    textAlign: 'center',
-    padding: '32px 24px 48px',
-  },
-  trustedLabel: {
-    fontSize: 14,
-    color: theme.textMuted,
-    margin: '0 0 24px',
-    textTransform: 'uppercase',
-    letterSpacing: '0.1em',
-  },
-  trustedLogos: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  trustedLogo: {
-    fontFamily: "'Bebas Neue', sans-serif",
-    fontSize: 18,
-    fontWeight: 600,
-    letterSpacing: '0.05em',
-    color: theme.textSecondary,
-  },
-  section: {
-    padding: '56px 24px',
-    borderTop: `1px solid ${theme.border}`,
-    maxWidth: 1100,
-    margin: '0 auto',
-  },
-  sectionTitle: {
-    fontFamily: "'AmericanCaptain', 'Bebas Neue', sans-serif",
-    fontSize: 'clamp(22px, 3vw, 28px)',
-    fontWeight: 400,
-    letterSpacing: '0.03em',
-    color: theme.text,
-    margin: '0 0 12px',
-    textAlign: 'center',
-  },
-  sectionSub: {
-    fontSize: 16,
-    color: theme.textSecondary,
-    margin: '0 0 40px',
-    textAlign: 'center',
-    lineHeight: 1.5,
-  },
-  featureGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-    gap: 24,
-  },
-  featureCard: {
-    padding: 28,
-    backgroundColor: theme.bgCard,
-    borderRadius: 12,
-    border: `1px solid ${theme.border}`,
-    boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-  },
-  featureTitle: {
-    fontFamily: "'Space Grotesk', Inter, sans-serif",
-    fontSize: 18,
-    fontWeight: 600,
-    color: theme.text,
-    margin: '0 0 12px',
-  },
-  featureDesc: {
-    fontSize: 14,
-    color: theme.textSecondary,
-    margin: '0 0 20px',
-    lineHeight: 1.6,
-  },
-  featureLink: {
-    fontSize: 14,
-    fontWeight: 600,
-    color: theme.accent,
-    textDecoration: 'none',
-  },
-  workflow: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-    gap: 24,
-  },
-  workflowStep: {
-    padding: 24,
-    textAlign: 'center',
-  },
-  workflowNum: {
-    display: 'inline-block',
-    width: 40,
-    height: 40,
-    lineHeight: '40px',
-    textAlign: 'center',
-    backgroundColor: theme.accentLight,
-    borderRadius: 10,
-    fontSize: 16,
-    fontWeight: 600,
-    color: theme.accent,
-    marginBottom: 16,
-  },
-  workflowLabel: {
-    fontSize: 16,
-    fontWeight: 600,
-    color: theme.text,
-    margin: '0 0 8px',
-  },
-  workflowDesc: {
-    fontSize: 13,
-    color: theme.textSecondary,
-    margin: 0,
-    lineHeight: 1.5,
-  },
-  bulkList: {
-    maxWidth: 560,
-    margin: '0 auto 32px',
-  },
-  bulkItem: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 12,
-    marginBottom: 14,
-    fontSize: 15,
-    color: theme.textSecondary,
-  },
-  check: {
-    color: theme.success,
-    fontWeight: 700,
-    fontSize: 18,
-  },
-  benefitsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-    gap: 24,
-  },
-  benefitCard: {
-    padding: 24,
-    backgroundColor: theme.bgCard,
-    borderRadius: 10,
-    border: `1px solid ${theme.border}`,
-    boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-  },
-  benefitTitle: {
-    fontSize: 16,
-    fontWeight: 600,
-    color: theme.text,
-    margin: '0 0 8px',
-    textTransform: 'capitalize',
-  },
-  benefitDesc: {
-    fontSize: 14,
-    color: theme.textSecondary,
-    margin: 0,
-    lineHeight: 1.5,
-  },
-  faqList: {
-    maxWidth: 640,
-    margin: '0 auto',
-  },
-  faqItem: {
-    borderBottom: `1px solid ${theme.border}`,
-    padding: '20px 0',
-    cursor: 'pointer',
-  },
-  faqQuestion: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    fontSize: 15,
-    fontWeight: 500,
-    color: theme.text,
-  },
-  faqIcon: {
-    fontSize: 20,
-    color: theme.textMuted,
-  },
-  faqAnswer: {
-    fontSize: 14,
-    color: theme.textSecondary,
-    margin: '16px 0 0',
-    lineHeight: 1.6,
-  },
-  finalCta: {
-    textAlign: 'center',
-    padding: '80px 24px 100px',
-    borderTop: `1px solid ${theme.border}`,
-  },
-  finalTitle: {
-    fontFamily: "'AmericanCaptain', 'Bebas Neue', sans-serif",
-    fontSize: 'clamp(24px, 3.5vw, 32px)',
-    fontWeight: 400,
-    letterSpacing: '0.04em',
-    color: theme.text,
-    margin: '0 0 12px',
-  },
-  finalSub: {
-    fontSize: 16,
-    color: theme.textSecondary,
-    margin: '0 0 32px',
-  },
-};

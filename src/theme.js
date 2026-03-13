@@ -1,37 +1,37 @@
 /**
- * CertVault professional light theme.
- * Slate/blue palette – clean and corporate.
+ * CertVault – Apple-style light theme.
+ * Neutral base, one blue accent, generous whitespace.
  */
 export const certVaultTheme = {
-  // Backgrounds
-  bg: '#f8fafc',
+  // Backgrounds (Apple-like off-white)
+  bg: '#fafafa',
   bgCard: '#ffffff',
-  bgCardSubtle: 'rgba(255, 255, 255, 0.8)',
-  bgInput: '#f1f5f9',
-  headerBg: 'rgba(255, 255, 255, 0.9)',
-  overlay: 'rgba(15, 23, 42, 0.6)',
+  bgCardSubtle: 'rgba(255, 255, 255, 0.9)',
+  bgInput: '#f5f5f7',
+  headerBg: 'rgba(250, 250, 250, 0.85)',
+  overlay: 'rgba(0, 0, 0, 0.5)',
 
-  // Text
-  text: '#0f172a',
-  textSecondary: '#475569',
-  textMuted: '#64748b',
+  // Text (neutral grays)
+  text: '#1d1d1f',
+  textSecondary: '#6e6e73',
+  textMuted: '#86868b',
 
   // Borders
-  border: '#e2e8f0',
-  borderLight: '#f1f5f9',
+  border: '#d2d2d7',
+  borderLight: '#e8e8ed',
 
-  // Accents
-  accent: '#2563eb',
-  accentLight: 'rgba(37, 99, 235, 0.1)',
-  success: '#059669',
-  successLight: 'rgba(5, 150, 105, 0.12)',
-  error: '#dc2626',
-  errorLight: 'rgba(220, 38, 38, 0.1)',
-  warning: '#d97706',
-  warningLight: 'rgba(234, 179, 8, 0.12)',
+  // One accent (Apple blue)
+  accent: '#0071e3',
+  accentLight: 'rgba(0, 113, 227, 0.12)',
+  success: '#34c759',
+  successLight: 'rgba(52, 199, 89, 0.12)',
+  error: '#ff3b30',
+  errorLight: 'rgba(255, 59, 48, 0.1)',
+  warning: '#ff9500',
+  warningLight: 'rgba(255, 149, 0, 0.12)',
 
-  // Grid/dots (subtle on light bg)
-  gridLine: 'rgba(15, 23, 42, 0.06)',
-  dotColor: '#94a3b8',
-  dotOpacity: 0.4,
+  // Subtle grid/dots
+  gridLine: 'rgba(0, 0, 0, 0.04)',
+  dotColor: '#86868b',
+  dotOpacity: 0.2,
 };

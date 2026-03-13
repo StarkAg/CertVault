@@ -1,211 +1,188 @@
 /**
- * CertVault Club Login/Signup — clubs only.
+ * CertVault Club Login — Supabase magic link (email link) auth.
+ * Login: enter email → link sent. Signup: name + email → link sent; complete org on first visit.
  */
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import CertVaultLayout from './CertVaultLayout';
-import { certVaultTheme as theme } from '../theme';
+import { supabase, getAuthRedirectUrl } from '../lib/supabase';
 
-const API_BASE = '/api/certvault';
+const PENDING_ORG_NAME_KEY = 'certvault_pending_org_name';
 
 export default function CertVaultLogin() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState('login'); // 'login' or 'signup'
+  const [mode, setMode] = useState('login');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [sent, setSent] = useState(false);
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
     setLoading(true);
+    setSent(false);
+
+    if (!supabase) {
+      setError('Auth is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
+      setLoading(false);
+      return;
+    }
+
+    const emailTrim = email.trim().toLowerCase();
+    if (!emailTrim) {
+      setError('Please enter your email.');
+      setLoading(false);
+      return;
+    }
+
+    if (mode === 'signup' && !name.trim()) {
+      setError('Please enter your club name.');
+      setLoading(false);
+      return;
+    }
 
     try {
-      const action = mode === 'signup' ? 'signup' : 'login';
-      const body = mode === 'signup' 
-        ? { name, email, password }
-        : { email, password };
+      if (mode === 'signup') {
+        localStorage.setItem(PENDING_ORG_NAME_KEY, name.trim());
+      } else {
+        localStorage.removeItem(PENDING_ORG_NAME_KEY);
+      }
 
-      const res = await fetch(`${API_BASE}?action=${action}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+      const { error: signError } = await supabase.auth.signInWithOtp({
+        email: emailTrim,
+        options: {
+          emailRedirectTo: getAuthRedirectUrl(),
+        },
       });
 
-      const data = await res.json().catch(() => ({}));
-
-      if (res.ok && data.success) {
-        localStorage.setItem('certvault_club_token', data.token || '');
-        localStorage.setItem('certvault_club_org', JSON.stringify(data.organization || {}));
-        navigate('/dashboard');
+      if (signError) {
+        setError(signError.message || 'Could not send link');
+        setLoading(false);
         return;
       }
 
-      setError(data.error || `${mode === 'signup' ? 'Signup' : 'Login'} failed.`);
+      setSent(true);
     } catch (err) {
-      setError('Connection failed. Please try again.');
+      setError(err.message || 'Something went wrong');
     } finally {
       setLoading(false);
     }
   }
 
+  if (sent) {
+    return (
+      <CertVaultLayout>
+        <div className="min-h-screen flex items-center justify-center p-6 bg-[var(--apple-bg)]">
+          <div className="w-full max-w-[400px] text-center">
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
+              <div className="inline-flex items-center justify-center size-14 rounded-full bg-emerald-500/10 text-emerald-600 mb-6">
+                <span className="material-symbols-outlined text-4xl">mail</span>
+              </div>
+              <h1 className="text-[24px] font-semibold text-[var(--apple-text-primary)] mb-2">Check your email</h1>
+              <p className="text-[var(--apple-text-secondary)] text-sm mb-6">
+                We sent a sign-in link to <strong className="text-[var(--apple-text-primary)]">{email.trim()}</strong>. Click the link in that email to sign in.
+              </p>
+              <p className="text-[var(--apple-text-secondary)] text-xs">
+                The link expires in 1 hour. Didn’t get it? Check spam or{' '}
+                <button type="button" onClick={() => setSent(false)} className="text-[var(--apple-accent)] font-medium hover:underline">
+                  try again
+                </button>.
+              </p>
+            </div>
+            <footer className="mt-8">
+              <Link to="/" className="text-[var(--apple-text-secondary)] text-xs hover:text-[var(--apple-accent)]">← Back to CertVault</Link>
+            </footer>
+          </div>
+        </div>
+      </CertVaultLayout>
+    );
+  }
+
   return (
     <CertVaultLayout>
-      <style>{`
-        @media (max-width: 768px) {
-          .certvault-login-wrap {
-            padding: 0 12px !important;
-          }
-          .certvault-login-title {
-            font-size: 18px !important;
-            white-space: nowrap !important;
-          }
-          .certvault-login-subtitle {
-            font-size: 12px !important;
-          }
-          .certvault-login-label {
-            font-size: 12px !important;
-          }
-          .certvault-login-input {
-            font-size: 14px !important;
-            padding: 10px 12px !important;
-          }
-          .certvault-login-btn {
-            font-size: 13px !important;
-            padding: 10px 20px !important;
-            white-space: nowrap !important;
-          }
-        }
-      `}</style>
-      <div className="certvault-login-wrap" style={styles.wrap}>
-        <h1 className="certvault-login-title" style={styles.title}>{mode === 'signup' ? 'Create Club Account' : 'Club Login'}</h1>
-        <p className="certvault-login-subtitle" style={styles.subtitle}>
-          {mode === 'signup' 
-            ? 'Register your club to start issuing certificates.'
-            : 'Sign in to manage events and certificates.'}
-        </p>
+      <div className="min-h-screen flex items-center justify-center p-6 bg-[var(--apple-bg)]">
+        <div className="w-full max-w-[400px]">
+          <div className="flex items-center justify-center gap-2 mb-8">
+            <div className="flex items-center justify-center size-8 bg-[var(--apple-accent)] rounded-lg text-white">
+              <span className="material-symbols-outlined text-xl">shield_person</span>
+            </div>
+            <h2 className="text-xl font-bold tracking-tight text-[var(--apple-text-primary)]">CertVault</h2>
+          </div>
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
+            <h1 className="text-[32px] font-semibold text-[var(--apple-text-primary)] mb-6 tracking-tight">
+              {mode === 'signup' ? 'Create Club Account' : 'Club Login'}
+            </h1>
+            {mode === 'signup' && (
+              <p className="text-[var(--apple-text-secondary)] text-sm mb-6">Enter your details. We’ll send a sign-in link to your email—no password needed.</p>
+            )}
+            {mode === 'login' && (
+              <p className="text-[var(--apple-text-secondary)] text-sm mb-6">Sign in with a link sent to your email.</p>
+            )}
 
-        <form onSubmit={handleSubmit} style={styles.form}>
-          {mode === 'signup' && (
-            <>
-              <label className="certvault-login-label" style={styles.label}>Club/Organization Name</label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. IEEE SRM"
-                className="certvault-login-input"
-                style={styles.input}
-                required
-                disabled={loading}
-              />
-            </>
-          )}
-
-          <label className="certvault-login-label" style={styles.label}>Email</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="certvault-login-input"
-            style={styles.input}
-            required
-            disabled={loading}
-          />
-
-          <label className="certvault-login-label" style={styles.label}>Password</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="certvault-login-input"
-            style={styles.input}
-            required
-            disabled={loading}
-            minLength={mode === 'signup' ? 6 : undefined}
-          />
-
-          {error && <p style={styles.error}>{error}</p>}
-
-          <button type="submit" className="certvault-login-btn" style={styles.btn} disabled={loading}>
-            {loading 
-              ? (mode === 'signup' ? 'Creating account…' : 'Signing in…')
-              : (mode === 'signup' ? 'Create Account' : 'Sign in')}
-          </button>
-        </form>
-
-        <div style={styles.switchMode}>
-          {mode === 'login' ? (
-            <p>
-              Don't have an account?{' '}
-              <button 
-                type="button" 
-                onClick={() => { setMode('signup'); setError(''); }}
-                style={styles.linkBtn}
-              >
-                Sign up
-              </button>
-            </p>
-          ) : (
-            <p>
-              Already have an account?{' '}
-              <button 
-                type="button" 
-                onClick={() => { setMode('login'); setError(''); }}
-                style={styles.linkBtn}
-              >
-                Sign in
-              </button>
-            </p>
-          )}
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {mode === 'signup' && (
+                <div>
+                  <label className="block text-sm font-medium text-[var(--apple-text-primary)] mb-1.5" htmlFor="club-name">Club Name</label>
+                  <input
+                    id="club-name"
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="e.g. IEEE CS SRM"
+                    className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-[var(--apple-accent)]/20 focus:border-[var(--apple-accent)] transition-all outline-none text-sm"
+                    required
+                    disabled={loading}
+                  />
+                </div>
+              )}
+              <div>
+                <label className="block text-sm font-medium text-[var(--apple-text-primary)] mb-1.5" htmlFor="email">Email</label>
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@example.com"
+                  className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-[var(--apple-accent)]/20 focus:border-[var(--apple-accent)] transition-all outline-none text-sm"
+                  required
+                  disabled={loading}
+                />
+              </div>
+              {error && (
+                <div className="p-3 rounded-lg bg-red-50 border border-red-100 flex items-start gap-2 text-red-600 text-sm">
+                  <span className="material-symbols-outlined text-sm mt-0.5">error</span>
+                  <span>{error}</span>
+                </div>
+              )}
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-[var(--apple-accent)] text-white font-semibold py-3.5 rounded-[12px] shadow-lg shadow-blue-500/20 hover:opacity-95 active:scale-[0.98] transition-all disabled:opacity-60"
+                >
+                  {loading ? (mode === 'signup' ? 'Sending link…' : 'Sending link…') : (mode === 'signup' ? 'Send sign-in link' : 'Send sign-in link')}
+                </button>
+              </div>
+            </form>
+            <div className="mt-8 pt-6 border-t border-slate-50 text-center">
+              {mode === 'login' ? (
+                <button type="button" onClick={() => { setMode('signup'); setError(''); }} className="text-sm font-medium text-[var(--apple-accent)] hover:underline transition-all">
+                  Need an account? Sign up
+                </button>
+              ) : (
+                <button type="button" onClick={() => { setMode('login'); setError(''); }} className="text-sm font-medium text-[var(--apple-accent)] hover:underline transition-all">
+                  Already have an account? Sign in
+                </button>
+              )}
+            </div>
+          </div>
+          <footer className="mt-8 text-center">
+            <Link to="/" className="text-[var(--apple-text-secondary)] text-xs hover:text-[var(--apple-accent)]">← Back to CertVault</Link>
+          </footer>
         </div>
-
-        <Link to="/" style={styles.backLink}>← Back to CertVault</Link>
       </div>
     </CertVaultLayout>
   );
 }
-
-const styles = {
-  wrap: { maxWidth: 400, margin: '0 auto', textAlign: 'center' },
-  title: { fontFamily: "'AmericanCaptain', 'Bebas Neue', sans-serif", fontSize: 24, fontWeight: 400, letterSpacing: '0.03em', color: theme.text, margin: '0 0 8px' },
-  subtitle: { fontSize: 14, color: theme.textSecondary, margin: '0 0 24px' },
-  form: { display: 'flex', flexDirection: 'column', gap: 16, textAlign: 'left' },
-  label: { fontSize: 14, fontWeight: 500, color: theme.textSecondary, marginBottom: -8 },
-  input: {
-    padding: '12px 16px',
-    fontSize: 15,
-    border: `1px solid ${theme.border}`,
-    borderRadius: 8,
-    outline: 'none',
-    transition: 'border-color 0.2s',
-    backgroundColor: theme.bgInput,
-    color: theme.text,
-  },
-  error: {
-    fontSize: 14,
-    color: theme.error,
-    margin: 0,
-    padding: '8px 12px',
-    backgroundColor: theme.errorLight,
-    border: `1px solid ${theme.error}`,
-    borderRadius: 6,
-  },
-  btn: {
-    padding: '12px 24px',
-    backgroundColor: theme.accent,
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: 500,
-    border: 'none',
-    borderRadius: 8,
-    cursor: 'pointer',
-    marginTop: 8,
-    transition: 'all 0.2s ease',
-  },
-  switchMode: { textAlign: 'center', marginTop: 24, fontSize: 14, color: theme.textSecondary },
-  linkBtn: { background: 'none', border: 'none', color: theme.accent, fontWeight: 600, cursor: 'pointer', textDecoration: 'underline', padding: 0 },
-  backLink: { display: 'block', textAlign: 'center', marginTop: 32, fontSize: 14, color: theme.textSecondary, textDecoration: 'none' },
-};

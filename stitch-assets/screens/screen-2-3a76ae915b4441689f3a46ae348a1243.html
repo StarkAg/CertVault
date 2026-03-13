@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              colors: {
+                "primary": "#197fe6",
+                "background-light": "#fafafa",
+                "background-dark": "#111921",
+                "neutral-dark": "#1d1d1f",
+                "neutral-secondary": "#86868b",
+              },
+              fontFamily: {
+                "display": ["Inter", "sans-serif"]
+              },
+              borderRadius: {"DEFAULT": "0.5rem", "lg": "0.75rem", "xl": "1.5rem", "full": "9999px"},
+            },
+          },
+        }
+      </script>
+<title>CertVault Premium Hero</title>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display antialiased">
+<div class="relative flex min-h-screen w-full flex-col overflow-x-hidden">
+<!-- Navigation -->
+<header class="flex items-center justify-between px-6 py-6 md:px-12 lg:px-24">
+<div class="flex items-center gap-2 text-neutral-dark dark:text-slate-100">
+<div class="flex items-center justify-center size-8 bg-primary rounded-lg text-white">
+<span class="material-symbols-outlined text-xl">shield_person</span>
+</div>
+<h2 class="text-xl font-bold tracking-tight">CertVault</h2>
+</div>
+<nav class="hidden md:flex items-center gap-10">
+<a class="text-neutral-secondary hover:text-primary transition-colors text-sm font-medium" href="#">Product</a>
+<a class="text-neutral-secondary hover:text-primary transition-colors text-sm font-medium" href="#">Features</a>
+<a class="text-neutral-secondary hover:text-primary transition-colors text-sm font-medium" href="#">Pricing</a>
+<a class="text-neutral-secondary hover:text-primary transition-colors text-sm font-medium" href="#">Security</a>
+</nav>
+<div class="flex items-center gap-4">
+<button class="hidden sm:flex text-neutral-dark dark:text-slate-100 text-sm font-semibold px-4 py-2">
+                    Sign In
+                </button>
+<button class="flex items-center justify-center rounded-lg bg-primary px-5 py-2.5 text-white text-sm font-bold shadow-sm hover:opacity-90 transition-opacity">
+                    Get Started
+                </button>
+</div>
+</header>
+<!-- Main Hero Section -->
+<main class="flex flex-1 flex-col items-center justify-center px-6 text-center">
+<div class="max-w-[720px] w-full flex flex-col items-center gap-8 py-20 md:py-32">
+<!-- Badge (Optional addition for 'Premium' feel) -->
+<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold tracking-wide uppercase mb-2">
+<span class="material-symbols-outlined text-sm">verified</span>
+                    Enterprise Grade Security
+                </div>
+<!-- Headline -->
+<h1 class="text-neutral-dark dark:text-slate-100 text-5xl md:text-6xl lg:text-[56px] font-extrabold leading-[1.1] tracking-[-0.02em]">
+                    Your achievements, <br class="hidden md:block"/> securely anchored.
+                </h1>
+<!-- Subhead -->
+<p class="text-neutral-secondary dark:text-slate-400 text-lg md:text-xl font-medium leading-relaxed max-w-[600px]">
+                    The definitive vault for professional certifications and credentials.
+                </p>
+<!-- Action Buttons -->
+<div class="flex flex-col sm:flex-row items-center gap-4 mt-4">
+<button class="w-full sm:w-auto flex min-w-[160px] items-center justify-center rounded-lg bg-primary h-14 px-8 text-white text-base font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform">
+                        Get Started
+                    </button>
+<button class="w-full sm:w-auto flex min-w-[160px] items-center justify-center rounded-lg border-2 border-slate-200 dark:border-slate-800 h-14 px-8 text-neutral-dark dark:text-slate-100 text-base font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                        View Demo
+                    </button>
+</div>
+<!-- Visual Element (Abstract Premium Image) -->
+<div class="mt-16 w-full max-w-[840px] aspect-video rounded-xl overflow-hidden shadow-2xl bg-white">
+<div class="w-full h-full bg-gradient-to-br from-slate-50 to-slate-200 dark:from-slate-800 dark:to-slate-900 flex items-center justify-center relative">
+<!-- Abstract Decorative Element -->
+<div class="absolute inset-0 opacity-20 pointer-events-none" style="background-image: radial-gradient(circle at 2px 2px, #197fe6 1px, transparent 0); background-size: 24px 24px;"></div>
+<img alt="Secure Digital Certificate Interface" class="w-full h-full object-cover mix-blend-overlay opacity-60" data-alt="Modern clean dashboard showing verified professional certificates" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCYBPD7MmMku3-2omhzARJuOKf7lj5I0yOWxMTGo_L46MXk1ouQQYHQ6t3XXvIyZ_4GQSyiqEWDoK0PoiJXMp41TjZreiPj9s7s6NlLYtfl0yjA3mwTsDsiGi0jEYwB9Wt03XjqHDefvDH4dI7qJAwhrkK1gY8XclOA5cZCHnIkb33rWBtoqE9mjEX4mZErJs0nQgmgNQ8aNTw27wm-twnN0Ew61Byy9Edt5x-nc19jUC2bi45cG5fzYmzODDBj98FztTHasxDoTZ8"/>
+<div class="absolute flex flex-col items-center gap-4">
+<span class="material-symbols-outlined text-7xl text-primary/40">lock_open</span>
+<p class="text-neutral-secondary font-medium uppercase tracking-[0.2em] text-xs">Encrypted Storage</p>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="mt-auto border-t border-slate-200 dark:border-slate-800 px-6 py-12">
+<div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
+<div class="flex items-center gap-2 text-neutral-dark dark:text-slate-100 opacity-50">
+<span class="material-symbols-outlined text-lg">shield_person</span>
+<span class="font-bold">CertVault</span>
+</div>
+<div class="flex flex-wrap justify-center gap-8">
+<a class="text-neutral-secondary hover:text-primary transition-colors text-sm" href="#">Privacy Policy</a>
+<a class="text-neutral-secondary hover:text-primary transition-colors text-sm" href="#">Terms of Service</a>
+<a class="text-neutral-secondary hover:text-primary transition-colors text-sm" href="#">Contact</a>
+</div>
+<p class="text-neutral-secondary text-sm">
+                    © 2024 CertVault Inc. All rights reserved.
+                </p>
+</div>
+</footer>
+</div>
+</body></html>

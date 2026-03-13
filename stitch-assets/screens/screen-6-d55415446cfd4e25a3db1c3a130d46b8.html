@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style type="text/tailwindcss">
+        :root {
+            --apple-bg: #fafafa;
+            --apple-card: #ffffff;
+            --apple-border: #e8e8ed;
+            --apple-text-primary: #1d1d1f;
+            --apple-text-secondary: #6e6e73;
+            --apple-accent: #0071e3;
+            --apple-radius: 18px;
+        }
+        @layer base {
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", "Inter", sans-serif;
+                background-color: var(--apple-bg);
+                color: var(--apple-text-primary);
+                -webkit-font-smoothing: antialiased;
+            }
+        }
+        .apple-card {
+            background: var(--apple-card);
+            border: 1px solid var(--apple-border);
+            border-radius: var(--apple-radius);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            transition: all 0.3s ease;
+        }
+        .apple-card:hover {
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+        }
+        .section-container {
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 100px 20px;
+        }
+        .hero-container {
+            max-width: 720px;
+            margin: 0 auto;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'apple-accent': '#0071e3',
+                        'apple-primary': '#1d1d1f',
+                        'apple-secondary': '#6e6e73'
+                    }
+                }
+            }
+        }
+    </script>
+<title>CertVault | Professional Certification Vault</title>
+</head>
+<body>
+<header class="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-md border-b border-[#e8e8ed]">
+<div class="max-w-[2560px] mx-auto flex items-center justify-between px-8 py-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[#0071e3]">verified_user</span>
+<span class="text-[21px] font-semibold tracking-tight text-[var(--apple-text-primary)]">CertVault</span>
+</div>
+<div class="hidden lg:block text-[12px] font-medium text-[var(--apple-text-secondary)] tracking-tight">
+                Distributed by CertVault
+            </div>
+<nav class="flex items-center gap-8 text-[12px] font-medium text-[var(--apple-text-secondary)]">
+<a class="hover:text-[var(--apple-accent)] transition-colors" href="#">Home</a>
+<a class="hover:text-[var(--apple-accent)] transition-colors" href="#">How It Works</a>
+<a class="hover:text-[var(--apple-accent)] transition-colors" href="#">For Clubs</a>
+<a class="hover:text-[var(--apple-accent)] transition-colors" href="#">Verify</a>
+<a class="bg-[var(--apple-accent)] text-white px-4 py-1.5 rounded-full hover:opacity-90 transition-opacity" href="#">Login</a>
+</nav>
+</div>
+</header>
+<main class="w-full max-w-[2560px] mx-auto">
+<section class="hero-container text-center pt-32 pb-24">
+<h1 class="text-[56px] font-bold tracking-[-0.02em] leading-[1.1] mb-6 text-[var(--apple-text-primary)]">
+                Your achievements, securely anchored.
+            </h1>
+<p class="text-[19px] md:text-[21px] text-[var(--apple-text-secondary)] leading-relaxed mb-10 max-w-[600px] mx-auto">
+                The definitive vault for professional certifications and credentials.
+            </p>
+<div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+<button class="bg-[var(--apple-accent)] text-white px-8 py-3.5 rounded-full font-medium text-[17px] hover:opacity-90 transition-opacity min-w-[160px]">
+                    Get Started
+                </button>
+<button class="border border-[var(--apple-accent)] text-[var(--apple-accent)] px-8 py-3.5 rounded-full font-medium text-[17px] hover:bg-blue-50 transition-colors min-w-[160px]">
+                    View Demo
+                </button>
+</div>
+</section>
+<section class="section-container border-t border-[var(--apple-border)]">
+<div class="flex flex-col md:flex-row items-center justify-between opacity-50 grayscale gap-12">
+<div class="flex items-center gap-3">
+<span class="text-xl font-bold tracking-tighter">IEEE SRM</span>
+</div>
+<div class="flex items-center gap-3">
+<span class="text-xl font-bold italic tracking-tight">GradeX</span>
+</div>
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined">groups</span>
+<span class="text-xl font-bold">Student Clubs</span>
+</div>
+</div>
+</section>
+<section class="section-container">
+<div class="text-center mb-16">
+<h2 class="text-[40px] font-bold tracking-tight mb-4">The Complete Platform</h2>
+<p class="text-[19px] text-[var(--apple-text-secondary)]">Everything you need to issue and manage credentials.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+<div class="apple-card p-10 flex flex-col h-full">
+<span class="material-symbols-outlined text-[var(--apple-accent)] text-4xl mb-6">description</span>
+<h3 class="text-xl font-semibold mb-3">Digital Certificates</h3>
+<p class="text-[var(--apple-text-secondary)] text-[17px] leading-relaxed mb-6">High-fidelity digital credentials that are tamper-proof and stunning.</p>
+<a class="mt-auto text-[var(--apple-accent)] font-medium inline-flex items-center group" href="#">
+                        Learn more <span class="material-symbols-outlined text-sm ml-1 group-hover:translate-x-1 transition-transform">arrow_forward_ios</span>
+</a>
+</div>
+<div class="apple-card p-10 flex flex-col h-full">
+<span class="material-symbols-outlined text-[var(--apple-accent)] text-4xl mb-6">workspace_premium</span>
+<h3 class="text-xl font-semibold mb-3">Public Verification</h3>
+<p class="text-[var(--apple-text-secondary)] text-[17px] leading-relaxed mb-6">Instant QR-based verification that anyone can use to validate authenticity.</p>
+<a class="mt-auto text-[var(--apple-accent)] font-medium inline-flex items-center group" href="#">
+                        Learn more <span class="material-symbols-outlined text-sm ml-1 group-hover:translate-x-1 transition-transform">arrow_forward_ios</span>
+</a>
+</div>
+<div class="apple-card p-10 flex flex-col h-full">
+<span class="material-symbols-outlined text-[var(--apple-accent)] text-4xl mb-6">dynamic_feed</span>
+<h3 class="text-xl font-semibold mb-3">Bulk Generator</h3>
+<p class="text-[var(--apple-text-secondary)] text-[17px] leading-relaxed mb-6">Issue thousands of certificates in seconds with our automated engine.</p>
+<a class="mt-auto text-[var(--apple-accent)] font-medium inline-flex items-center group" href="#">
+                        Learn more <span class="material-symbols-outlined text-sm ml-1 group-hover:translate-x-1 transition-transform">arrow_forward_ios</span>
+</a>
+</div>
+</div>
+</section>
+<section class="bg-white py-24 border-y border-[var(--apple-border)]">
+<div class="section-container">
+<div class="text-center mb-20">
+<h2 class="text-[40px] font-bold tracking-tight mb-4">How It Works</h2>
+<p class="text-[19px] text-[var(--apple-text-secondary)]">Four steps to absolute credential security.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-4 gap-12">
+<div class="text-center">
+<div class="w-16 h-16 bg-[#f5f5f7] rounded-full flex items-center justify-center mx-auto mb-6 text-2xl font-bold text-[var(--apple-text-primary)]">1</div>
+<h4 class="font-semibold text-lg mb-2">Design</h4>
+<p class="text-[var(--apple-text-secondary)] text-[15px]">Create your template using our pro tools.</p>
+</div>
+<div class="text-center">
+<div class="w-16 h-16 bg-[#f5f5f7] rounded-full flex items-center justify-center mx-auto mb-6 text-2xl font-bold text-[var(--apple-text-primary)]">2</div>
+<h4 class="font-semibold text-lg mb-2">Generate</h4>
+<p class="text-[var(--apple-text-secondary)] text-[15px]">Populate data automatically from your records.</p>
+</div>
+<div class="text-center">
+<div class="w-16 h-16 bg-[#f5f5f7] rounded-full flex items-center justify-center mx-auto mb-6 text-2xl font-bold text-[var(--apple-text-primary)]">3</div>
+<h4 class="font-semibold text-lg mb-2">Send</h4>
+<p class="text-[var(--apple-text-secondary)] text-[15px]">Distribute via secure email or direct links.</p>
+</div>
+<div class="text-center">
+<div class="w-16 h-16 bg-[#f5f5f7] rounded-full flex items-center justify-center mx-auto mb-6 text-2xl font-bold text-[var(--apple-text-primary)]">4</div>
+<h4 class="font-semibold text-lg mb-2">Verify</h4>
+<p class="text-[var(--apple-text-secondary)] text-[15px]">Recipients and third-parties verify in one click.</p>
+</div>
+</div>
+</div>
+</section>
+<section class="section-container">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-32">
+<div class="apple-card p-10">
+<h3 class="font-bold text-xl mb-4">Save time</h3>
+<p class="text-[var(--apple-text-secondary)] text-[17px] leading-relaxed">Automated workflows reduce administrative overhead by up to 90%.</p>
+</div>
+<div class="apple-card p-10">
+<h3 class="font-bold text-xl mb-4">Verifiable</h3>
+<p class="text-[var(--apple-text-secondary)] text-[17px] leading-relaxed">Blockchain-backed security ensures every certificate is authentic and immutable.</p>
+</div>
+<div class="apple-card p-10">
+<h3 class="font-bold text-xl mb-4">Professional</h3>
+<p class="text-[var(--apple-text-secondary)] text-[17px] leading-relaxed">Premium presentation that matches the prestige of your organization.</p>
+</div>
+</div>
+<div class="max-w-[720px] mx-auto">
+<h2 class="text-3xl font-bold mb-12 text-center">Frequently Asked Questions</h2>
+<div class="space-y-4">
+<div class="border-b border-[var(--apple-border)] py-6">
+<button class="w-full flex justify-between items-center text-left font-semibold text-lg">
+<span>How secure is the data storage?</span>
+<span class="material-symbols-outlined text-[var(--apple-text-secondary)]">add</span>
+</button>
+</div>
+<div class="border-b border-[var(--apple-border)] py-6">
+<button class="w-full flex justify-between items-center text-left font-semibold text-lg">
+<span>Can we integrate with our existing CRM?</span>
+<span class="material-symbols-outlined text-[var(--apple-text-secondary)]">add</span>
+</button>
+</div>
+<div class="border-b border-[var(--apple-border)] py-6">
+<button class="w-full flex justify-between items-center text-left font-semibold text-lg">
+<span>What happens if we stop using CertVault?</span>
+<span class="material-symbols-outlined text-[var(--apple-text-secondary)]">add</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+<section class="section-container text-center py-32">
+<div class="apple-card bg-white p-20">
+<h2 class="text-[48px] font-bold tracking-tight mb-8">Ready to issue certificates?</h2>
+<div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+<button class="bg-[var(--apple-accent)] text-white px-10 py-4 rounded-full font-medium text-[19px] hover:opacity-90 transition-opacity">
+                        Get Started for Free
+                    </button>
+<button class="text-[var(--apple-text-primary)] px-10 py-4 font-medium text-[19px] inline-flex items-center group">
+                        Contact Sales <span class="material-symbols-outlined text-sm ml-1 group-hover:translate-x-1 transition-transform">arrow_forward_ios</span>
+</button>
+</div>
+</div>
+</section>
+</main>
+<footer class="bg-white border-t border-[var(--apple-border)] py-12 px-8">
+<div class="max-w-[980px] mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
+<div class="flex items-center gap-2 text-[var(--apple-text-secondary)]">
+<span class="material-symbols-outlined text-sm">verified_user</span>
+<span class="font-semibold text-sm">CertVault</span>
+</div>
+<div class="flex gap-10 text-[12px] text-[var(--apple-text-secondary)]">
+<a class="hover:underline" href="#">Privacy Policy</a>
+<a class="hover:underline" href="#">Terms of Service</a>
+<a class="hover:underline" href="#">Support</a>
+</div>
+<div class="text-[12px] text-[var(--apple-text-secondary)]">
+                © 2024 CertVault. All rights reserved.
+            </div>
+</div>
+</footer>
+
+</body></html>

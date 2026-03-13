@@ -1,149 +1,113 @@
 /**
- * CertVault layout: Professional light theme.
- * Clean background with subtle grid; dot animation uses theme colors.
+ * CertVault layout: Stitch design with interactive dot grid and header.
+ * - Interactive dot-grid background: dots react to cursor (glow + subtle movement).
+ * - Cursor-following soft blue glow for premium feel.
+ * - Header from Stitch screen-1: icon + CertVault, A GradeX Product, nav, Login pill.
  */
-import React, { useMemo, useState, useEffect, createContext, useContext } from 'react';
+import React, { useMemo, useState, useEffect, useRef, useCallback, createContext, useContext } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { certVaultTheme as theme } from '../theme';
 
-// Context for verify page to override logo (e.g. icon-192 for HIZE event)
 export const CertVaultLogoContext = createContext(null);
 
-const GRID_COLS = 12;
-const GRID_ROWS = 8;
+const DOT_COLS = 24;
+const DOT_ROWS = 14;
+const GLOW_RADIUS_PCT = 18;
+const GLOW_INFLUENCE = 0.7;
 
-function CertVaultDots() {
-  const [isScrollIdle, setIsScrollIdle] = useState(true);
+function InteractiveDotGrid() {
+  const containerRef = useRef(null);
+  const [mousePct, setMousePct] = useState(null);
+  const rafRef = useRef(null);
 
   const dots = useMemo(() => {
-    const directions = [
-      { dx: 1, dy: 1 },
-      { dx: -1, dy: 1 },
-      { dx: 1, dy: -1 },
-      { dx: -1, dy: -1 },
-    ];
     const list = [];
-    for (let r = 0; r < GRID_ROWS; r++) {
-      for (let c = 0; c < GRID_COLS; c++) {
-        const dir = directions[(r * GRID_COLS + c) % directions.length];
+    for (let r = 0; r < DOT_ROWS; r++) {
+      for (let c = 0; c < DOT_COLS; c++) {
+        const x = (c / Math.max(1, DOT_COLS - 1)) * 100;
+        const y = (r / Math.max(1, DOT_ROWS - 1)) * 100;
         list.push({
           id: `${r}-${c}`,
-          delay: Math.random() * 8,
-          duration: 2.5 + Math.random() * 2,
-          x: (c / Math.max(1, GRID_COLS - 1)) * 100,
-          y: (r / Math.max(1, GRID_ROWS - 1)) * 100,
-          size: 1.5 + Math.random() * 1.5,
-          opacity: 0.25 + Math.random() * 0.2,
-          ...dir,
+          x,
+          y,
+          size: 2 + Math.random() * 1.5,
+          baseOpacity: 0.08 + Math.random() * 0.1,
         });
       }
     }
     return list;
   }, []);
 
-  useEffect(() => {
-    let timeout;
-    const handleScroll = () => {
-      setIsScrollIdle(false);
-      clearTimeout(timeout);
-      timeout = setTimeout(() => setIsScrollIdle(true), 400);
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      clearTimeout(timeout);
-    };
+  const handleMove = useCallback((e) => {
+    if (!containerRef.current) return;
+    rafRef.current && cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(() => {
+      const rect = containerRef.current.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 100;
+      const y = ((e.clientY - rect.top) / rect.height) * 100;
+      setMousePct({ x, y });
+      rafRef.current = null;
+    });
   }, []);
 
+  const handleLeave = useCallback(() => setMousePct(null), []);
+
+  useEffect(() => {
+    window.addEventListener('mousemove', handleMove, { passive: true });
+    window.addEventListener('mouseleave', handleLeave);
+    return () => {
+      window.removeEventListener('mousemove', handleMove);
+      window.removeEventListener('mouseleave', handleLeave);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [handleMove, handleLeave]);
+
   return (
-    <div className={`certvault-dots ${isScrollIdle ? 'scroll-idle' : ''}`} style={dotsWrap}>
-      <style>{`
-        @keyframes certvault-shooting {
-          0% {
-            transform: translate(var(--from-x), var(--from-y)) scale(0.3);
-            opacity: 0;
-          }
-          5% {
-            opacity: var(--op);
-          }
-          95% {
-            opacity: var(--op);
-          }
-          100% {
-            transform: translate(var(--to-x), var(--to-y)) scale(1);
-            opacity: 0;
-          }
-        }
-        @keyframes certvault-shooting-idle {
-          0% {
-            transform: translate(var(--from-x), var(--from-y)) scale(0.4);
-            opacity: 0;
-          }
-          8% {
-            opacity: calc(var(--op) * 0.7);
-          }
-          92% {
-            opacity: calc(var(--op) * 0.7);
-          }
-          100% {
-            transform: translate(var(--to-x), var(--to-y)) scale(0.8);
-            opacity: 0;
-          }
-        }
-        .certvault-dots .dot {
-          position: absolute;
-          left: var(--x);
-          top: var(--y);
-          width: var(--size, 2px);
-          height: var(--size, 2px);
-          margin-left: calc(var(--size) / -2);
-          margin-top: calc(var(--size) / -2);
-          background: ${theme.dotColor};
-          border-radius: 50%;
-          box-shadow: var(--trail);
-          --op: var(--opacity, 0.35);
-          opacity: 0;
-          pointer-events: none;
-        }
-        .certvault-dots:not(.scroll-idle) .dot {
-          animation: certvault-shooting var(--dur) linear infinite;
-          animation-delay: var(--delay);
-        }
-        .certvault-dots.scroll-idle .dot {
-          animation: certvault-shooting-idle var(--dur-idle) linear infinite;
-          animation-delay: var(--delay);
-        }
-      `}</style>
+    <div
+      ref={containerRef}
+      className="certvault-dot-grid"
+      style={{
+        position: 'fixed',
+        inset: 0,
+        overflow: 'hidden',
+        zIndex: 0,
+        pointerEvents: 'none',
+      }}
+    >
       {dots.map((d) => {
-        const dist = 120;
-        const fromX = (d.dx > 0 ? -dist : dist) + '%';
-        const fromY = (d.dy > 0 ? -dist : dist) + '%';
-        const toX = (d.dx > 0 ? dist : -dist) + '%';
-        const toY = (d.dy > 0 ? dist : -dist) + '%';
-        const trailLen = 5;
-        const trailShadows = Array.from({ length: trailLen }, (_, i) => {
-          const o = (0.15 - (i / trailLen) * 0.12).toFixed(2);
-          const x = -d.dx * (i + 1) * 5;
-          const y = -d.dy * (i + 1) * 5;
-          return `${x}px ${y}px 0 0 rgba(15,23,42,${o})`;
-        }).join(', ');
+        let opacity = d.baseOpacity;
+        let scale = 1;
+        let blur = 0;
+        let color = theme.dotColor;
+        if (mousePct) {
+          const dist = Math.hypot(d.x - mousePct.x, d.y - mousePct.y);
+          const t = Math.max(0, 1 - dist / GLOW_RADIUS_PCT);
+          const smooth = t * t;
+          opacity = Math.min(1, d.baseOpacity + smooth * GLOW_INFLUENCE);
+          scale = 1 + smooth * 0.6;
+          if (smooth > 0.3) {
+            blur = smooth * 2;
+            color = theme.accent;
+          }
+        }
         return (
           <div
             key={d.id}
-            className="dot"
+            className="certvault-dot"
             style={{
-              '--x': `${d.x}%`,
-              '--y': `${d.y}%`,
-              '--size': `${d.size}px`,
-              '--opacity': String(d.opacity),
-              '--delay': `${d.delay}s`,
-              '--dur': `${d.duration}s`,
-              '--dur-idle': `${d.duration * 2.5}s`,
-              '--from-x': fromX,
-              '--from-y': fromY,
-              '--to-x': toX,
-              '--to-y': toY,
-              '--trail': trailShadows || 'none',
+              position: 'absolute',
+              left: `${d.x}%`,
+              top: `${d.y}%`,
+              width: d.size,
+              height: d.size,
+              marginLeft: -d.size / 2,
+              marginTop: -d.size / 2,
+              borderRadius: '50%',
+              background: color,
+              opacity,
+              transform: `scale(${scale})`,
+              boxShadow: blur > 0 ? `0 0 ${blur * 4}px ${theme.accent}40` : 'none',
+              transition: 'opacity 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease',
             }}
           />
         );
@@ -152,20 +116,56 @@ function CertVaultDots() {
   );
 }
 
-const dotsWrap = {
-  position: 'fixed',
-  inset: 0,
-  overflow: 'hidden',
-  zIndex: 0,
-  pointerEvents: 'none',
-};
+function CursorGlowSimple() {
+  const [pos, setPos] = useState(null);
+  const raf = useRef(null);
+
+  useEffect(() => {
+    const onMove = (e) => {
+      raf.current && cancelAnimationFrame(raf.current);
+      raf.current = requestAnimationFrame(() => {
+        setPos({ x: e.clientX, y: e.clientY });
+        raf.current = null;
+      });
+    };
+    const onLeave = () => setPos(null);
+    window.addEventListener('mousemove', onMove, { passive: true });
+    window.addEventListener('mouseleave', onLeave);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseleave', onLeave);
+      if (raf.current) cancelAnimationFrame(raf.current);
+    };
+  }, []);
+
+  if (!pos) return null;
+  return (
+    <div
+      aria-hidden
+      style={{
+        position: 'fixed',
+        left: pos.x,
+        top: pos.y,
+        width: 360,
+        height: 360,
+        marginLeft: -180,
+        marginTop: -180,
+        background: 'radial-gradient(circle, rgba(0,113,227,0.14) 0%, rgba(0,113,227,0.05) 35%, transparent 65%)',
+        borderRadius: '50%',
+        pointerEvents: 'none',
+        zIndex: 0,
+        transition: 'left 0.1s ease-out, top 0.1s ease-out',
+      }}
+    />
+  );
+}
 
 const CERTVAULT_NAV = [
   { path: '/', label: 'Home' },
   { path: '/how-it-works', label: 'How It Works' },
   { path: '/for-clubs', label: 'For Clubs' },
-  { path: '/verify', label: 'Verify Certificate' },
-  { path: '/login', label: 'Login' },
+  { path: '/verify', label: 'Verify' },
+  { path: '/login', label: 'Login', pill: true },
 ];
 
 const DEFAULT_LOGO = '/image.png';
@@ -173,214 +173,110 @@ const DEFAULT_LOGO = '/image.png';
 export default function CertVaultLayout({ children }) {
   const location = useLocation();
   const [logoUrl, setLogoUrl] = useState(DEFAULT_LOGO);
-
   const isDesignPage = location.pathname === '/design';
   const isVerifyPage = location.pathname === '/verify';
 
-  // Reset logo when leaving verify page or on mount
   useEffect(() => {
-    if (!isVerifyPage) {
-      setLogoUrl(DEFAULT_LOGO);
-    }
+    if (!isVerifyPage) setLogoUrl(DEFAULT_LOGO);
   }, [isVerifyPage]);
-  
-  // Ensure logo is set on mount
-  useEffect(() => {
-    setLogoUrl(DEFAULT_LOGO);
-  }, []);
 
   return (
     <div
       className="certvault-app"
       style={{
-        ...styles.app,
+        position: 'relative',
+        width: '100%',
+        minHeight: '100vh',
+        boxSizing: 'border-box',
+        background: theme.bg,
+        color: theme.text,
+        fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", "Helvetica Neue", sans-serif',
+        display: 'flex',
+        flexDirection: 'column',
         ...((isDesignPage || isVerifyPage) ? { height: '100vh', maxHeight: '100vh', overflow: 'hidden' } : {}),
       }}
     >
-      <CertVaultDots />
+      <InteractiveDotGrid />
+      <CursorGlowSimple />
+      <div
+        className="certvault-bg-glow"
+        style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 0,
+          pointerEvents: 'none',
+          background: 'radial-gradient(ellipse 100% 80% at 50% -20%, rgba(0,113,227,0.04) 0%, transparent 50%)',
+        }}
+      />
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Merriweather:wght@400;700&family=Lora:wght@400;600;700&family=Source+Serif+4:wght@400;600;700&family=Crimson+Text:wght@400;600;700&family=Libre+Baskerville:wght@400;700&family=EB+Garamond:wght@400;600&display=swap');
-        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Open+Sans:wght@400;600;700&family=Source+Sans+3:wght@400;600;700&family=Work+Sans:wght@400;600&family=DM+Sans:wght@400;600&family=Plus+Jakarta+Sans:wght@400;600;700&family=Outfit:wght@400;600&family=Manrope:wght@400;600&family=Sora:wght@400;600&family=Lexend:wght@400;600&display=swap');
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Fira+Code:wght@400;600&family=Source+Code+Pro:wght@400;600&family=IBM+Plex+Mono:wght@400;600&family=Inconsolata:wght@400;700&display=swap');
-        @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;600&family=Raleway:wght@400;600;700&family=Montserrat:wght@400;600;700&family=Poppins:wght@400;600&family=Quicksand:wght@400;600&family=Archivo:wght@400;600&family=Nunito:wght@400;600;700&display=swap');
-        
         @media (max-width: 768px) {
-          .certvault-header-inner {
-            grid-template-columns: 1fr !important;
-            gap: 6px !important;
-          }
-          .certvault-center-branding {
-            display: none !important;
-          }
-          .certvault-nav {
-            justify-content: center !important;
-            width: 100% !important;
-            gap: 2px !important;
-            flex-wrap: nowrap !important;
-          }
-          .certvault-nav-link {
-            font-size: 10px !important;
-            padding: 4px 6px !important;
-            white-space: nowrap !important;
-          }
-          .certvault-header {
-            padding: 8px 10px !important;
-          }
-          .certvault-main {
-            padding: 16px 10px !important;
-          }
-          .certvault-logo-img {
-            height: 32px !important;
-          }
+          .certvault-stitch-header .certvault-center { display: none; }
+          .certvault-stitch-header .certvault-nav-wrap { gap: 0.5rem; }
+          .certvault-stitch-header .certvault-nav-wrap a { font-size: 11px; padding: 0.25rem 0.5rem; }
         }
       `}</style>
-      <header className="certvault-header" style={styles.header}>
-        <div className="certvault-header-inner" style={styles.headerInner}>
-          <div style={styles.logoBlock}>
-            <Link to="/" style={styles.logo}>
-              <img src={logoUrl} alt="CertVault" style={styles.logoImg} />
-            </Link>
-          </div>
-          <div className="certvault-center-branding" style={styles.centerBranding}>
-            <p style={styles.headerBrand}>
-              Distributed by: CertVault - GradeX <img src="/arc-reactor1.png" alt="GradeX" style={styles.headerBrandLogo} />
-            </p>
-          </div>
-          <nav className="certvault-nav" style={styles.nav}>
-            {CERTVAULT_NAV.map(({ path, label }) => (
-              <Link
-                key={path}
-                to={path}
-                className="certvault-nav-link"
-                style={{
-                  ...styles.navLink,
-                  ...(location.pathname === path || (path === '/' && location.pathname === '/') ? styles.navLinkActive : {}),
-                }}
-              >
-                {label}
-              </Link>
-            ))}
+
+      <header className="certvault-stitch-header sticky top-0 z-[100] w-full bg-white/80 backdrop-blur-xl border-b border-[#e8e8ed]">
+        <div className="max-w-[2560px] mx-auto px-6 sm:px-12 py-2.5 flex items-center justify-between">
+          <Link to="/" className="flex flex-col gap-0.5 group cursor-pointer text-[var(--apple-text-primary)] no-underline">
+            <div className="flex items-center gap-2">
+              {logoUrl && logoUrl !== DEFAULT_LOGO ? (
+                <img src={logoUrl} alt="CertVault" className="h-8 w-auto object-contain" />
+              ) : (
+                <span className="material-symbols-outlined text-[var(--apple-accent)] text-[28px]">verified_user</span>
+              )}
+              <span className="text-[21px] font-semibold tracking-tight">CertVault</span>
+            </div>
+            <span className="text-[10px] font-medium text-[var(--apple-text-secondary)] uppercase tracking-widest opacity-70">A GradeX Product</span>
+          </Link>
+          <div className="certvault-center hidden lg:block flex-1" aria-hidden />
+          <nav className="certvault-nav-wrap flex items-center gap-6 lg:gap-8">
+            {CERTVAULT_NAV.map(({ path, label, pill }) => {
+              const isActive = location.pathname === path || (path === '/' && location.pathname === '/');
+              if (pill) {
+                return (
+                  <Link
+                    key={path}
+                    to={path}
+                    className="ml-2 sm:ml-4 bg-[var(--apple-accent)] text-white px-4 py-1.5 rounded-full text-[12px] font-medium hover:brightness-110 transition-all no-underline"
+                  >
+                    {label}
+                  </Link>
+                );
+              }
+              return (
+                <Link
+                  key={path}
+                  to={path}
+                  className={`text-[12px] font-medium uppercase tracking-widest no-underline transition-colors ${
+                    isActive ? 'text-[var(--apple-accent)]' : 'text-[var(--apple-text-secondary)] hover:text-[var(--apple-accent)]'
+                  }`}
+                >
+                  {label}
+                </Link>
+              );
+            })}
           </nav>
         </div>
       </header>
-      <main className="certvault-main" style={{ ...styles.main, ...((isDesignPage || isVerifyPage) ? { padding: '12px 20px', overflow: 'hidden' } : {}) }}>
+
+      <main
+        className="certvault-main"
+        style={{
+          flex: 1,
+          width: '100%',
+          padding: isDesignPage || isVerifyPage ? '12px 20px' : '48px 24px',
+          boxSizing: 'border-box',
+          position: 'relative',
+          zIndex: 1,
+          minHeight: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: isDesignPage || isVerifyPage ? 'hidden' : undefined,
+        }}
+      >
         <CertVaultLogoContext.Provider value={setLogoUrl}>{children}</CertVaultLogoContext.Provider>
       </main>
     </div>
   );
 }
-
-const styles = {
-  app: {
-    position: 'relative',
-    width: '100%',
-    minHeight: '100vh',
-    boxSizing: 'border-box',
-    background: `
-      linear-gradient(${theme.gridLine} 1px, transparent 1px),
-      linear-gradient(90deg, ${theme.gridLine} 1px, transparent 1px),
-      ${theme.bg}
-    `,
-    backgroundSize: '40px 40px, 40px 40px, 100% 100%',
-    backgroundAttachment: 'fixed',
-    color: theme.text,
-    fontFamily: '"Space Grotesk", Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  header: {
-    backgroundColor: theme.headerBg,
-    backdropFilter: 'blur(12px)',
-    WebkitBackdropFilter: 'blur(12px)',
-    borderBottom: `1px solid ${theme.border}`,
-    padding: '16px 24px',
-    position: 'sticky',
-    top: 0,
-    zIndex: 100,
-    '@media (max-width: 768px)': {
-      padding: '12px 16px',
-    },
-  },
-  headerInner: {
-    width: '100%',
-    display: 'grid',
-    gridTemplateColumns: '1fr auto 1fr',
-    alignItems: 'center',
-    gap: 16,
-  },
-  logoBlock: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-  },
-  centerBranding: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-  },
-  logo: {
-    display: 'flex',
-    alignItems: 'center',
-    fontSize: 20,
-    fontWeight: 600,
-    color: theme.text,
-    textDecoration: 'none',
-    letterSpacing: '-0.02em',
-  },
-  logoImg: {
-    height: 44,
-    width: 'auto',
-    objectFit: 'contain',
-  },
-  headerBrand: {
-    fontSize: 14,
-    fontFamily: "'Bebas Neue', sans-serif",
-    letterSpacing: '0.05em',
-    color: theme.textSecondary,
-    margin: 0,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  headerBrandLogo: {
-    height: 20,
-    width: 'auto',
-    verticalAlign: 'middle',
-  },
-  nav: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 8,
-    justifyContent: 'flex-end',
-    flexWrap: 'wrap',
-  },
-  navLink: {
-    fontSize: 14,
-    fontFamily: '"Space Grotesk", Inter, sans-serif',
-    color: theme.textSecondary,
-    whiteSpace: 'nowrap',
-    textDecoration: 'none',
-    padding: '8px 12px',
-    borderRadius: 6,
-    transition: 'all 0.2s ease',
-  },
-  navLinkActive: {
-    color: theme.accent,
-    fontWeight: 500,
-    backgroundColor: theme.accentLight,
-  },
-  main: {
-    flex: 1,
-    width: '100%',
-    padding: '48px 24px',
-    boxSizing: 'border-box',
-    position: 'relative',
-    zIndex: 1,
-    minHeight: 0,
-    display: 'flex',
-    flexDirection: 'column',
-  },
-};

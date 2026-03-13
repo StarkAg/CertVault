@@ -8,6 +8,7 @@ The **“CertVault server misconfigured. Missing environment variables”** mess
 - **Start command**: **`node server.js`** (or `npm start`).
 - If the site loads but CSS/JS fail with **"MIME type 'text/html'"** or **404/500 on `/assets/...`**, the front-end build did not run or `dist/` is missing in the deployed image. Check the **build logs** and confirm the build step runs and finishes without errors.
 - For custom domain **certvault.gradex.bond**: set **`PUBLIC_URL=https://certvault.gradex.bond`** and add that origin to **Redirect URLs** in Supabase (see below).
+- **Supabase + Dockerfile**: If the build fails with missing Supabase env, the build will now only warn (so the deploy succeeds). To enable magic link auth, set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in Railway Variables; if your Railway setup doesn’t pass them as Docker build args, switch to Nixpacks by renaming `Dockerfile` to e.g. `Dockerfile.bak` so Railway injects Variables at build time.
 
 ## Required variables (must set)
 

@@ -14,12 +14,11 @@ const url = process.env.VITE_SUPABASE_URL;
 const anonKey = process.env.VITE_SUPABASE_ANON_KEY;
 
 if (!url || !anonKey) {
-  console.error(
-    '[CertVault build] Missing Supabase env. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY before building.\n' +
+  console.warn(
+    '[CertVault build] Missing Supabase env (VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY). Magic link login will be disabled in this build.\n' +
     '  Local: add them to .env\n' +
-    '  Railway: add them in Service → Variables, then redeploy (build runs with those vars).'
+    '  Railway: set them in Service → Variables. With Dockerfile they must be passed as build args; if build still fails, try Nixpacks (rename Dockerfile) so vars are injected at build time.'
   );
-  process.exit(1);
+} else {
+  console.log('[CertVault build] Supabase env OK');
 }
-
-console.log('[CertVault build] Supabase env OK');

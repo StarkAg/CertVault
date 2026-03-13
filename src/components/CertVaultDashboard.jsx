@@ -15,6 +15,13 @@ const API_BASE = '/api/certvault';
 const DESIGN_STORAGE_KEY = 'certvault_design';
 const PENDING_ORG_NAME_KEY = 'certvault_pending_org_name';
 
+/** First word of name, slugified (lowercase, a-z0-9). Used to suggest student download slug. */
+function firstWordSlug(name) {
+  if (!name || typeof name !== 'string') return '';
+  const first = name.trim().split(/\s+/)[0] || '';
+  return first.toLowerCase().replace(/[^a-z0-9-]/g, '');
+}
+
 const DASHBOARD_SECTIONS = [
   { id: 'events', label: 'Events' },
   { id: 'certificates', label: 'Certificates' },
@@ -277,7 +284,7 @@ export default function CertVaultDashboard() {
 
   useEffect(() => {
     const ev = events.find(e => e.id === selectedEventId);
-    setDownloadSlugInput(ev?.download_slug || '');
+    setDownloadSlugInput(ev?.download_slug || firstWordSlug(ev?.name) || '');
   }, [selectedEventId, events]);
 
   function handleLogout() {
@@ -911,7 +918,11 @@ export default function CertVaultDashboard() {
                   type="text"
                   placeholder="Event name"
                   value={newEventName}
-                  onChange={(e) => setNewEventName(e.target.value)}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setNewEventName(v);
+                    setNewEventDownloadSlug(prev => prev === '' ? firstWordSlug(v) : prev);
+                  }}
                   className="certvault-dashboard-input"
                   style={styles.input}
                   required

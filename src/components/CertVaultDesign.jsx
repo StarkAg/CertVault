@@ -3,7 +3,7 @@
  * Drag & drop template, preview, verify line, save to localStorage for use in dashboard.
  */
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import CertVaultLayout from './CertVaultLayout';
 import { certVaultTheme as theme } from '../theme';
 
@@ -105,6 +105,8 @@ async function svgToPngDataUrl(svgDataUrl) {
 
 export default function CertVaultDesign() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const fromEventId = location.state?.fromEventId ?? null;
   const [templateImage, setTemplateImage] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isDraggingVerify, setIsDraggingVerify] = useState(false);
@@ -328,7 +330,13 @@ export default function CertVaultDesign() {
       `}</style>
       <div className="certvault-design-wrap" style={styles.wrap}>
         <div className="certvault-design-header" style={styles.header}>
-          <Link to="/dashboard" style={styles.backLink}>← Back</Link>
+          <button
+            type="button"
+            onClick={() => navigate('/dashboard', { state: { section: 'certificates', selectedEventId: fromEventId, showGenerate: true } })}
+            style={{ ...styles.backLink, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+          >
+            ← Back to certificates
+          </button>
           <h1 style={styles.title}>Design Certificate</h1>
         </div>
 

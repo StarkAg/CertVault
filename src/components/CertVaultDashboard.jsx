@@ -3,7 +3,7 @@
  * Auth: Supabase session (magic link) or legacy certvault_club_token.
  */
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import JSZip from 'jszip';
 import CertVaultLayout from './CertVaultLayout';
 import { compressTemplateImage } from '../utils/certvaultCompress';
@@ -30,6 +30,7 @@ const DASHBOARD_SECTIONS = [
 
 export default function CertVaultDashboard() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [section, setSection] = useState('events');
   const [organization, setOrganization] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -287,6 +288,16 @@ export default function CertVaultDashboard() {
     setDownloadSlugInput(ev?.download_slug || firstWordSlug(ev?.name) || '');
   }, [selectedEventId, events]);
 
+  // Restore state when returning from Design page (Back button)
+  useEffect(() => {
+    const s = location.state;
+    if (!s || (!s.section && !s.selectedEventId && !s.showGenerate)) return;
+    if (s.section) setSection(s.section);
+    if (s.selectedEventId) setSelectedEventId(s.selectedEventId);
+    if (s.showGenerate) setShowGenerate(true);
+    navigate(location.pathname, { replace: true, state: {} });
+  }, [location.pathname, location.state, navigate]);
+
   function handleLogout() {
     if (supabase) supabase.auth.signOut();
     localStorage.removeItem('certvault_club_token');
@@ -317,6 +328,13 @@ export default function CertVaultDashboard() {
         setNewEventDownloadSlug('');
         setShowCreateEvent(false);
         loadEvents();
+        // Guided flow: go to Certificates, select new event, open Generate
+        const newEventId = data.event?.id;
+        if (newEventId) {
+          setSection('certificates');
+          setSelectedEventId(newEventId);
+          setShowGenerate(true);
+        }
       } else {
         alert(data.error || 'Failed to create event');
       }
@@ -1148,6 +1166,9 @@ export default function CertVaultDashboard() {
             {/* Generate form */}
             {showGenerate && selectedEventId && (
               <form onSubmit={handleGenerateCertificates} style={styles.generateForm}>
+                <p style={{ marginBottom: 12, fontSize: 13, color: 'var(--apple-text-secondary)' }}>
+                  Step 1: Design your certificate template (optional). Step 2: Add recipients below and generate.
+                </p>
                 <label style={styles.label}>Recipients (name, email, category — one per line)</label>
                 <textarea
                   value={csvText}
@@ -1160,12 +1181,13 @@ export default function CertVaultDashboard() {
 
                 <Link
                   to="/design"
+                  state={{ fromEventId: selectedEventId }}
                   style={{ ...styles.secondaryBtn, textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
                 >
                   Design Certificate layout
                 </Link>
                 {templateImage && (
-                  <span style={styles.templateHint}>Template loaded from design. <Link to="/design" style={styles.linkBtn}>Edit</Link></span>
+                  <span style={styles.templateHint}>Template loaded from design. <Link to="/design" state={{ fromEventId: selectedEventId }} style={styles.linkBtn}>Edit</Link></span>
                 )}
 
                 <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>

@@ -43,3 +43,14 @@ To get real HTML/CSS you’d need to:
 The app is set up to show Stitch’s hero screenshot when the URL loads: see `CertVaultHome.jsx` and the `STITCH_HERO_IMAGE_URL` constant. If the image fails (e.g. 403), a short note suggests saving the screenshot as `public/stitch-hero.png` and using that instead.
 
 **Using the downloaded Stitch HTML/code:** The Home page (`CertVaultHome.jsx`) is built from the Stitch screen-1 HTML in `stitch-assets/screens/screen-1-0a0d98636c3647519db7eeb01a4094ae.html`. The project uses Tailwind CSS and the same CSS variables (e.g. `--apple-bg`, `--apple-accent`) and classes (`.apple-card`, `.floating-cert`, `.bg-mesh`) as the Stitch design. Other pages (For Clubs, How It Works, Verify, Login) can be updated to match their Stitch screen HTML in the same way.
+
+## Stitch MCP (Cursor)
+
+With the **Stitch MCP** server enabled in Cursor, you can use:
+
+- **list_projects** – List Stitch projects (e.g. CertVault `4117629537245596710`).
+- **list_screens** – List screens in a project (e.g. “Events Management”, “Club Analytics Dashboard”, “Template Designer”).
+- **get_screen** – Get screen details, screenshot URL, and HTML export URL for a given `projects/{project}/screens/{screen}`.
+- **generate_screen_from_text** – Generate new screens from a text prompt (requires project ID and prompt; can take a few minutes).
+
+The dashboard UI (Events, Certificates, Settings) is aligned with the Stitch CertVault project theme (LIGHT, Inter, ROUND_TWELVE, accent `#197fe6`) and with the **Events Management** and **Club Analytics Dashboard** screen structure (section titles, subtitles, primary buttons, cards). Design page and login already follow the same system; public pages (Home, For Clubs, How It Works, Verify) use `var(--apple-*)` from `index.css`.

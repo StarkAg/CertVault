@@ -919,7 +919,10 @@ export default function CertVaultDashboard() {
         {section === 'events' && (
           <div>
             <div className="certvault-dashboard-section-header" style={styles.sectionHeader}>
-              <h2 className="certvault-dashboard-h2" style={styles.h2}>Events</h2>
+              <div>
+                <h2 className="certvault-dashboard-h2" style={styles.h2}>Events</h2>
+                <p style={styles.sectionSubtitle}>Create and manage your certificate issuance events</p>
+              </div>
               <button 
                 type="button" 
                 onClick={() => setShowCreateEvent(!showCreateEvent)}
@@ -1065,10 +1068,13 @@ export default function CertVaultDashboard() {
             {/* Left panel: controls */}
             <div className="certvault-dashboard-certificates-left" style={styles.certificatesLeft}>
             <div className="certvault-dashboard-section-header" style={styles.sectionHeader}>
-              <h2 className="certvault-dashboard-h2" style={styles.h2}>
-                Certificates
-                {selectedEventInfo && <span style={styles.eventLabel}> — {selectedEventInfo.name}</span>}
-              </h2>
+              <div>
+                <h2 className="certvault-dashboard-h2" style={styles.h2}>
+                  Certificates
+                  {selectedEventInfo && <span style={styles.eventLabel}> — {selectedEventInfo.name}</span>}
+                </h2>
+                <p style={styles.sectionSubtitle}>Generate certificates and manage recipients</p>
+              </div>
             </div>
 
             <div style={styles.eventSelector}>
@@ -1385,7 +1391,9 @@ export default function CertVaultDashboard() {
         {/* SETTINGS TAB */}
         {section === 'settings' && (
           <div>
-            <h2 style={{ ...styles.h2, marginBottom: 20 }}>Organization</h2>
+            <h2 style={styles.h2}>Organization</h2>
+            <p style={styles.sectionSubtitle}>Organization details and account</p>
+            <div style={{ marginTop: 20 }}>
             {organization && (
               <div style={styles.settingsCard}>
                 <div style={styles.settingRow}>
@@ -1408,6 +1416,7 @@ export default function CertVaultDashboard() {
                 </div>
               </div>
             )}
+            </div>
           </div>
         )}
       </div>
@@ -1476,13 +1485,13 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
-    paddingBottom: 16,
-    borderBottom: `1px solid ${theme.border}`,
+    marginBottom: 24,
+    paddingBottom: 20,
+    borderBottom: `1px solid ${theme.borderLight}`,
   },
   title: {
-    fontFamily: "'Space Grotesk', Inter, sans-serif",
-    fontSize: 20,
+    fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif',
+    fontSize: 22,
     fontWeight: 600,
     letterSpacing: '-0.02em',
     color: theme.text,
@@ -1490,40 +1499,40 @@ const styles = {
   },
   orgName: {
     display: 'block',
-    fontSize: 12,
+    fontSize: 13,
     color: theme.textMuted,
     marginTop: 4,
     fontWeight: 400,
   },
   logout: {
-    padding: '6px 12px',
+    padding: '8px 16px',
     fontSize: 13,
     color: theme.textSecondary,
     backgroundColor: 'transparent',
-    border: `1px solid ${theme.border}`,
-    borderRadius: 8,
+    border: `1px solid ${theme.borderLight}`,
+    borderRadius: 12,
     cursor: 'pointer',
     transition: 'all 0.2s',
   },
   tabs: {
     display: 'flex',
-    gap: 6,
-    marginBottom: 24,
+    gap: 8,
+    marginBottom: 28,
   },
   tab: {
-    padding: '8px 16px',
+    padding: '10px 20px',
     fontSize: 13,
     color: theme.textSecondary,
     backgroundColor: 'transparent',
     border: 'none',
-    borderRadius: 8,
+    borderRadius: 12,
     cursor: 'pointer',
     transition: 'all 0.2s',
   },
   tabActive: {
-    color: theme.text,
+    color: theme.accent,
     backgroundColor: theme.accentLight,
-    fontWeight: 500,
+    fontWeight: 600,
   },
   contentWrap: { flex: 1, minHeight: 0, padding: '8px 0', display: 'flex', flexDirection: 'column' },
   content: { padding: 0 },
@@ -1534,12 +1543,18 @@ const styles = {
     marginBottom: 20,
   },
   h2: {
-    fontFamily: "'Space Grotesk', Inter, sans-serif",
-    fontSize: 15,
+    fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif',
+    fontSize: 17,
     whiteSpace: 'nowrap',
     fontWeight: 600,
-    color: theme.textSecondary,
+    color: theme.text,
     margin: 0,
+  },
+  sectionSubtitle: {
+    fontSize: 13,
+    color: theme.textMuted,
+    margin: '4px 0 0',
+    fontWeight: 400,
   },
   eventLabel: { fontWeight: 400, color: theme.textMuted },
   placeholder: { fontSize: 13, color: theme.textMuted, lineHeight: 1.6 },
@@ -1602,28 +1617,29 @@ const styles = {
     boxShadow: '0 4px 20px rgba(234, 179, 8, 0.4)',
   },
 
-  // Buttons
+  // Buttons (Stitch/Apple: primary = accent blue)
   primaryBtn: {
-    padding: '8px 14px',
-    backgroundColor: theme.bgCard,
+    padding: '10px 18px',
+    backgroundColor: theme.accent,
     whiteSpace: 'nowrap',
-    color: theme.text,
+    color: '#fff',
     fontSize: 13,
-    fontWeight: 500,
+    fontWeight: 600,
     border: 'none',
-    borderRadius: 8,
+    borderRadius: 12,
     cursor: 'pointer',
-    transition: 'all 0.2s',
+    boxShadow: `0 2px 8px ${theme.accent}30`,
+    transition: 'opacity 0.2s, transform 0.1s',
   },
   secondaryBtn: {
-    padding: '8px 14px',
+    padding: '10px 18px',
     backgroundColor: 'transparent',
     whiteSpace: 'nowrap',
     color: theme.textSecondary,
     fontSize: 13,
     fontWeight: 500,
-    border: `1px solid ${theme.border}`,
-    borderRadius: 8,
+    border: `1px solid ${theme.borderLight}`,
+    borderRadius: 12,
     cursor: 'pointer',
     transition: 'all 0.2s',
   },
@@ -1674,57 +1690,60 @@ const styles = {
     textDecoration: 'none',
   },
 
-  // Forms
+  // Forms (Stitch: white card, rounded-2xl)
   createForm: {
     display: 'flex',
     flexDirection: 'column',
-    gap: 12,
-    marginBottom: 24,
-    padding: 20,
-    backgroundColor: theme.bgInput,
-    border: `1px solid ${theme.border}`,
-    borderRadius: 12,
+    gap: 16,
+    marginBottom: 28,
+    padding: 24,
+    backgroundColor: theme.bgCard,
+    border: `1px solid ${theme.borderLight}`,
+    borderRadius: 18,
+    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
   },
   generateForm: {
     display: 'flex',
     flexDirection: 'column',
-    gap: 14,
-    padding: 18,
-    backgroundColor: theme.bgInput,
-    border: `1px solid ${theme.border}`,
-    borderRadius: 12,
+    gap: 16,
+    padding: 24,
+    backgroundColor: theme.bgCard,
+    border: `1px solid ${theme.borderLight}`,
+    borderRadius: 18,
+    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
   },
   input: {
-    padding: '10px 14px',
+    padding: '12px 16px',
     fontSize: 14,
-    border: `1px solid ${theme.border}`,
-    borderRadius: 8,
-    backgroundColor: theme.bgInput,
+    border: `1px solid ${theme.borderLight}`,
+    borderRadius: 12,
+    backgroundColor: theme.bgCard,
     color: theme.text,
     outline: 'none',
+    transition: 'border-color 0.2s, box-shadow 0.2s',
   },
   select: {
-    padding: '10px 14px',
+    padding: '12px 16px',
     fontSize: 14,
-    border: `1px solid ${theme.border}`,
-    borderRadius: 8,
+    border: `1px solid ${theme.borderLight}`,
+    borderRadius: 12,
     minWidth: 200,
-    backgroundColor: theme.bgInput,
+    backgroundColor: theme.bgCard,
     color: theme.text,
     outline: 'none',
   },
   textarea: {
-    padding: '12px 14px',
-    fontSize: 13,
-    border: `1px solid ${theme.border}`,
-    borderRadius: 8,
+    padding: '14px 16px',
+    fontSize: 14,
+    border: `1px solid ${theme.borderLight}`,
+    borderRadius: 12,
     fontFamily: 'inherit',
     resize: 'vertical',
-    backgroundColor: theme.bgInput,
+    backgroundColor: theme.bgCard,
     color: theme.text,
     outline: 'none',
   },
-  label: { fontSize: 13, fontWeight: 500, color: theme.textSecondary },
+  label: { fontSize: 14, fontWeight: 500, color: theme.text },
 
   // Certificates two-column layout
   certificatesLayout: {
@@ -1747,18 +1766,18 @@ const styles = {
     overflow: 'auto',
   },
   emptyState: {
-    padding: 40,
+    padding: 48,
     textAlign: 'center',
-    backgroundColor: theme.bgInput,
-    borderRadius: 12,
-    border: `1px dashed ${theme.border}`,
+    backgroundColor: theme.bgCard,
+    borderRadius: 18,
+    border: `1px dashed ${theme.borderLight}`,
   },
 
   downloadLinkCard: {
-    padding: 16,
+    padding: 20,
     backgroundColor: 'rgba(74, 222, 128, 0.06)',
     border: '1px solid rgba(74, 222, 128, 0.2)',
-    borderRadius: 10,
+    borderRadius: 18,
   },
   downloadLinkLabel: { fontSize: 13, fontWeight: 600, color: theme.text, display: 'block', marginBottom: 4 },
   downloadLinkHint: { fontSize: 12, color: theme.textMuted, margin: '0 0 12px' },
@@ -1787,10 +1806,11 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: '16px 20px',
-    backgroundColor: theme.bgInput,
-    border: `1px solid ${theme.border}`,
-    borderRadius: 12,
+    padding: '18px 22px',
+    backgroundColor: theme.bgCard,
+    border: `1px solid ${theme.borderLight}`,
+    borderRadius: 18,
+    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
     transition: 'all 0.2s',
   },
   eventInfo: { flex: 1 },
@@ -1802,9 +1822,10 @@ const styles = {
   // Certificates table
   certificatesTable: {
     overflowX: 'auto',
-    borderRadius: 12,
-    border: `1px solid ${theme.border}`,
+    borderRadius: 18,
+    border: `1px solid ${theme.borderLight}`,
     backgroundColor: theme.bgCard,
+    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
   },
   table: { width: '100%', borderCollapse: 'collapse', fontSize: 13 },
   th: {
@@ -1829,10 +1850,11 @@ const styles = {
 
   // Settings
   settingsCard: {
-    padding: 20,
-    backgroundColor: theme.bgInput,
-    border: `1px solid ${theme.border}`,
-    borderRadius: 12,
+    padding: 24,
+    backgroundColor: theme.bgCard,
+    border: `1px solid ${theme.borderLight}`,
+    borderRadius: 18,
+    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
   },
   settingRow: {
     display: 'flex',

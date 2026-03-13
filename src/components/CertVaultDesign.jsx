@@ -6,6 +6,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import CertVaultLayout from './CertVaultLayout';
 import { certVaultTheme as theme } from '../theme';
+import { supabase } from '../lib/supabase';
 
 const DESIGN_STORAGE_KEY = 'certvault_design';
 const CLUB_TEMPLATES_KEY = 'certvault_club_templates';
@@ -133,10 +134,40 @@ export default function CertVaultDesign() {
   const [saveTemplateName, setSaveTemplateName] = useState('');
   const [showSaveTemplate, setShowSaveTemplate] = useState(false);
   const previewContainerRef = useRef(null);
-  const token = typeof window !== 'undefined' ? localStorage.getItem('certvault_club_token') : null;
+  const [authToken, setAuthToken] = useState(null);
+  const [authChecked, setAuthChecked] = useState(false);
+  const token = authToken || (typeof window !== 'undefined' ? localStorage.getItem('certvault_club_token') : null);
 
-  // Load saved design and club templates
+  // Resolve auth: Supabase session or legacy certvault_club_token (same as Dashboard)
   useEffect(() => {
+    if (!supabase) {
+      setAuthToken(typeof window !== 'undefined' ? localStorage.getItem('certvault_club_token') : null);
+      setAuthChecked(true);
+      return;
+    }
+    let cancelled = false;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (cancelled) return;
+      if (session?.access_token) {
+        setAuthToken(session.access_token);
+      } else {
+        setAuthToken(typeof window !== 'undefined' ? localStorage.getItem('certvault_club_token') : null);
+      }
+      setAuthChecked(true);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (cancelled) return;
+      setAuthToken(session?.access_token || (typeof window !== 'undefined' ? localStorage.getItem('certvault_club_token') : null));
+    });
+    return () => {
+      cancelled = true;
+      subscription?.unsubscribe();
+    };
+  }, []);
+
+  // Redirect to login only after we've checked Supabase (so magic-link users aren’t sent to login)
+  useEffect(() => {
+    if (!authChecked) return;
     if (!token) {
       navigate('/login', { replace: true });
       return;
@@ -154,7 +185,7 @@ export default function CertVaultDesign() {
       const stored = localStorage.getItem(CLUB_TEMPLATES_KEY);
       if (stored) setSavedTemplates(JSON.parse(stored));
     } catch {}
-  }, [token, navigate]);
+  }, [authChecked, token, navigate]);
 
   const persistSavedTemplates = useCallback((templates) => {
     setSavedTemplates(templates);
@@ -293,6 +324,13 @@ export default function CertVaultDesign() {
   }, [isDragging, isDraggingVerify]);
 
 
+  if (!authChecked) {
+    return (
+      <CertVaultLayout>
+        <div style={{ textAlign: 'center', padding: 48 }}>Loading...</div>
+      </CertVaultLayout>
+    );
+  }
   if (!token) return null;
 
   return (
@@ -600,30 +638,32 @@ const styles = {
     padding: '12px 20px',
     boxSizing: 'border-box',
   },
-  header: { display: 'flex', alignItems: 'center', gap: 16, marginBottom: 12, flexShrink: 0 },
-  backLink: { fontSize: 12, color: theme.textMuted, textDecoration: 'none', whiteSpace: 'nowrap' },
-  title: { fontFamily: "'Space Grotesk', Inter, sans-serif", fontSize: 16, fontWeight: 600, color: theme.text, margin: 0, whiteSpace: 'nowrap' },
-  content: { flex: 1, minHeight: 0, display: 'flex', gap: 16 },
+  header: { display: 'flex', alignItems: 'center', gap: 20, marginBottom: 20, flexShrink: 0 },
+  backLink: { fontSize: 14, color: theme.accent, textDecoration: 'none', whiteSpace: 'nowrap', fontWeight: 500 },
+  title: { fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif', fontSize: 20, fontWeight: 600, letterSpacing: '-0.02em', color: theme.text, margin: 0, whiteSpace: 'nowrap' },
+  content: { flex: 1, minHeight: 0, display: 'flex', gap: 20 },
   sidebar: {
-    width: 220,
+    width: 260,
     flexShrink: 0,
     display: 'flex',
     flexDirection: 'column',
-    gap: 10,
+    gap: 12,
     minHeight: 0,
     overflowY: 'auto',
   },
   dropZone: {
-    border: `2px dashed ${theme.border}`,
-    borderRadius: 8,
-    padding: 16,
+    border: `2px dashed ${theme.borderLight}`,
+    borderRadius: 18,
+    padding: 20,
     textAlign: 'center',
-    backgroundColor: theme.bgInput,
+    backgroundColor: theme.bgCard,
+    borderColor: theme.borderLight,
+    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
     transition: 'all 0.2s',
     flexShrink: 0,
   },
   dropZoneActive: { borderColor: theme.accent, backgroundColor: theme.accentLight },
-  dropZoneCompact: { padding: 10 },
+  dropZoneCompact: { padding: 14 },
   dropText: { fontSize: 13, color: theme.text, margin: '0 0 4px' },
   dropSub: { fontSize: 11, color: theme.textMuted, margin: '0 0 8px' },
   uploadLabel: {
@@ -698,9 +738,10 @@ const styles = {
     position: 'relative',
     flex: 1,
     minHeight: 0,
-    borderRadius: 8,
+    borderRadius: 18,
     overflow: 'hidden',
-    border: `1px solid ${theme.border}`,
+    border: `1px solid ${theme.borderLight}`,
+    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
   },
   previewLoading: {
     position: 'absolute',

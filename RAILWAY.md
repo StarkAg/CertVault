@@ -17,7 +17,7 @@ Add these in **Railway → your service → Variables** (or **Settings → Varia
 |----------|-----------------|---------|
 | `CONVEX_URL` | Run `npx convex dev` locally (log in with Convex, create/link project). Copy the deployment URL from terminal or Convex dashboard. For production, run `npx convex deploy` and use the production URL. | `https://xxxxx.convex.cloud` |
 | `VITE_SUPABASE_URL` | Supabase project URL: Dashboard → Settings → API → Project URL. **Must be set in Railway** so the frontend build gets it (Vite inlines `VITE_*` at build time). | `https://xxxxx.supabase.co` |
-| `VITE_SUPABASE_ANON_KEY` | Supabase **anon/public** key: Dashboard → Settings → API → Project API keys → `anon` `public`. **Must be set in Railway** for the build. Never use the `service_role` key here. | `eyJhbGc...` |
+| `VITE_SUPABASE_ANON_KEY` | Supabase **anon/public** key: Dashboard → Settings → API → Project API keys → `anon` `public`. **Must be set in Railway** for the build. Never use the `service_role` key here. With the project **Dockerfile**, these are passed as build args so the frontend bundle gets them. | `eyJhbGc...` |
 
 Without CONVEX_URL, login, signup, events, and certificates will not work. Without the VITE_SUPABASE_* vars, you’ll see “Auth is not configured” and magic link login will be disabled.
 

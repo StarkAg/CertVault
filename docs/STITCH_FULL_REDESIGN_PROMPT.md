@@ -18,7 +18,7 @@ CertVault is a certificate issuance and verification platform for clubs and orga
 
 The platform also supports **mass emailing certificates to participants automatically**.
 
-Create a full desktop layout showing the entire site experience, including landing sections and product pages.
+Create a full desktop layout showing the entire siteh experience, including landing sections and product pages.
 
 The result should feel like Apple.com level product marketing: minimal, elegant, spacious, with subtle motion and polished visuals.
 

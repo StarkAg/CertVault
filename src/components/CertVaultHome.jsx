@@ -1,236 +1,264 @@
 /**
- * CertVault Home – built from Stitch screen-1 HTML (stitch-assets/screens).
- * Uses Tailwind + Stitch CSS variables and .apple-card, .floating-cert, .bg-mesh.
+ * Ventarc Home – exact Stitch export.
+ * Structure and classes match stitch-ventarc-hero.html from Stitch (projects/4726697925696762711).
  */
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
-import CertVaultLayout from './CertVaultLayout';
 
-const FEATURES = [
-  { icon: 'description', title: 'Digital Certificates', desc: 'High-fidelity digital credentials that are tamper-proof and visually stunning across all devices.', link: '/for-clubs' },
-  { icon: 'workspace_premium', title: 'Public Verification', desc: 'Instant QR-based verification that anyone can use to validate the authenticity of a document.', link: '/verify' },
-  { icon: 'dynamic_feed', title: 'Bulk Generator', desc: 'Issue thousands of personalized certificates in seconds with our high-speed automation engine.', link: '/for-clubs' },
-];
-
-const WORKFLOW = [
-  { label: 'Design', desc: 'Create your unique template using our professional design tools.' },
-  { label: 'Generate', desc: 'Populate data automatically from your existing records and CSVs.' },
-  { label: 'Send', desc: 'Distribute securely via encrypted email or direct public links.' },
-  { label: 'Verify', desc: 'Recipients and third-parties verify validity in one single click.' },
-];
-
-const BENEFITS = [
-  { icon: 'speed', title: 'Save time', desc: 'Automated workflows reduce administrative overhead by up to 90% per batch.' },
-  { icon: 'shield', title: 'Verifiable', desc: 'Cryptographically secure signatures ensure every certificate is authentic and immutable.' },
-  { icon: 'stars', title: 'Professional', desc: 'Premium presentation that matches the prestige of your global organization.' },
-];
-
-const FAQ_ITEMS = [
-  { q: 'How secure is the data storage?', a: 'CertVault uses industry-standard encryption and secure cloud storage. Your data and certificate records are protected.' },
-  { q: 'Can we integrate with our existing CRM?', a: 'Yes. CertVault supports CSV import and can integrate with your existing participant data. Contact us for API options.' },
-  { q: 'What happens if we stop using CertVault?', a: 'Existing certificates remain verifiable. You can export your data. Verification links continue to work.' },
-];
+const STITCH_PRIMARY = '#0d20f2';
+const STITCH_BG_DARK = '#101122';
 
 export default function CertVaultHome() {
-  const [openFaq, setOpenFaq] = useState(null);
-
   return (
-    <CertVaultLayout>
-      <main className="w-full max-w-[2560px] mx-auto overflow-hidden">
-        {/* Hero */}
-        <section className="relative pt-32 pb-48 bg-mesh">
-          <div className="max-w-[720px] mx-auto text-center relative z-10 px-6">
-            <h1 className="text-4xl sm:text-5xl md:text-[56px] font-bold tracking-[-0.03em] leading-[1.05] mb-6 text-[var(--apple-text-primary)]">
-              Your achievements, securely anchored.
+    <div
+      className="relative min-h-screen flex flex-col overflow-x-hidden antialiased"
+      style={{ background: STITCH_BG_DARK, fontFamily: 'Inter, sans-serif', color: '#f1f5f9' }}
+    >
+      {/* Animated Background – exact Stitch */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div
+          className="absolute bottom-0 left-[-50%] right-[-50%] h-[614px] stitch-perspective-grid opacity-30"
+          aria-hidden
+        />
+        <div
+          className="stitch-orb w-96 h-96 top-[-10%] left-[-5%]"
+          style={{ background: `rgba(13, 32, 242, 0.3)` }}
+          aria-hidden
+        />
+        <div
+          className="stitch-orb w-[500px] h-[500px] bottom-[10%] right-[-10%]"
+          style={{ background: 'rgba(147, 51, 234, 0.2)', filter: 'blur(120px)' }}
+          aria-hidden
+        />
+        <div
+          className="stitch-orb w-64 h-64 top-[40%] right-[20%]"
+          style={{ background: 'rgba(96, 165, 250, 0.1)', filter: 'blur(80px)' }}
+          aria-hidden
+        />
+        <div
+          className="absolute top-0 left-1/4 w-[1px] h-screen rotate-12"
+          style={{
+            background: `linear-gradient(to bottom, ${STITCH_PRIMARY}00, ${STITCH_PRIMARY}33, ${STITCH_PRIMARY}00)`,
+          }}
+          aria-hidden
+        />
+        <div
+          className="absolute top-0 right-1/3 w-[1px] h-screen -rotate-6"
+          style={{
+            background: 'linear-gradient(to bottom, rgba(168,85,247,0), rgba(168,85,247,0.1), rgba(168,85,247,0))',
+          }}
+          aria-hidden
+        />
+      </div>
+
+      {/* Header – exact Stitch */}
+      <header className="relative z-50 flex items-center justify-between px-6 py-6 lg:px-20 border-b border-white/10 stitch-glass">
+        <Link to="/" className="flex items-center gap-3 no-underline">
+          <div
+            className="w-10 h-10 rounded-lg flex items-center justify-center shadow-lg"
+            style={{ background: STITCH_PRIMARY, boxShadow: `0 10px 40px ${STITCH_PRIMARY}33` }}
+          >
+            <span className="material-symbols-outlined text-white text-2xl">change_history</span>
+          </div>
+          <h2 className="text-xl font-bold tracking-tight text-white">Ventarc</h2>
+        </Link>
+        <nav className="hidden md:flex items-center gap-10">
+          <a href="/ventarc/ventarc-features-dark.html" className="text-sm font-medium text-slate-300 hover:text-white transition-colors no-underline">
+            Features
+          </a>
+          <a href="/ventarc/ventarc-solutions-dark.html" className="text-sm font-medium text-slate-300 hover:text-white transition-colors no-underline">
+            Solutions
+          </a>
+          <a href="/ventarc/ventarc-pricing-dark.html" className="text-sm font-medium text-slate-300 hover:text-white transition-colors no-underline">
+            Pricing
+          </a>
+          <a href="/ventarc/ventarc-resources-dark.html" className="text-sm font-medium text-slate-300 hover:text-white transition-colors no-underline">
+            Resources
+          </a>
+        </nav>
+        <div className="flex items-center gap-3">
+          <Link
+            to="/login"
+            className="hidden sm:flex px-5 py-2 text-sm font-bold text-white stitch-glass hover:bg-white/10 rounded-lg transition-all no-underline"
+          >
+            Sign In
+          </Link>
+          <Link
+            to="/login"
+            className="px-5 py-2 text-sm font-bold text-white rounded-lg transition-all no-underline hover:brightness-110"
+            style={{ background: STITCH_PRIMARY, boxShadow: `0 10px 40px ${STITCH_PRIMARY}4D` }}
+          >
+            Get Started
+          </Link>
+        </div>
+      </header>
+
+      {/* Hero – exact Stitch two-column + glass card */}
+      <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 lg:px-20 py-20">
+        <div className="max-w-[1200px] w-full grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+          {/* Left column */}
+          <div className="flex flex-col gap-8 text-left">
+            <div
+              className="inline-flex items-center gap-2 px-3 py-1 rounded-full w-fit border"
+              style={{ background: `${STITCH_PRIMARY}1A`, borderColor: `${STITCH_PRIMARY}33` }}
+            >
+              <span className="w-2 h-2 rounded-full" style={{ background: STITCH_PRIMARY }} />
+              <span className="text-[10px] uppercase tracking-widest font-bold" style={{ color: STITCH_PRIMARY }}>
+                v2.0 Now Live
+              </span>
+            </div>
+            <h1 className="text-5xl md:text-7xl font-black leading-[1.1] tracking-tight text-white">
+              Run Events. <br />
+              <span className="stitch-text-gradient">Without the Chaos.</span>
             </h1>
-            <p className="text-[19px] md:text-[21px] text-[var(--apple-text-secondary)] leading-relaxed mb-10 max-w-[580px] mx-auto">
-              The definitive vault for professional certifications and credentials. Issue, manage, and verify with absolute confidence.
+            <p className="text-lg md:text-xl text-slate-400 leading-relaxed max-w-xl">
+              Ventarc is your all-in-one platform to manage events — from registrations and QR check-ins to automated
+              emails and verified certificates.
             </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link to="/for-clubs" className="bg-[var(--apple-accent)] text-white px-9 py-4 rounded-full font-medium text-[17px] hover:brightness-110 transition-all min-w-[180px] text-center">
+            <div className="flex flex-wrap gap-4 pt-4">
+              <Link
+                to="/login"
+                className="px-8 py-4 text-white font-bold rounded-lg flex items-center gap-2 hover:scale-[1.02] active:scale-95 transition-all no-underline"
+                style={{ background: STITCH_PRIMARY, boxShadow: `0 25px 50px -12px ${STITCH_PRIMARY}66` }}
+              >
                 Get Started
+                <span className="material-symbols-outlined text-lg">arrow_forward</span>
               </Link>
-              <Link to="/verify" className="border border-[var(--apple-accent)] text-[var(--apple-accent)] px-9 py-4 rounded-full font-medium text-[17px] hover:bg-blue-50/50 transition-all min-w-[180px] text-center">
-                View Demo
+              <Link
+                to="/for-clubs"
+                className="px-8 py-4 stitch-glass text-white font-bold rounded-lg hover:bg-white/5 transition-all no-underline"
+              >
+                Host an Event
               </Link>
             </div>
-          </div>
-          <div className="absolute inset-0 pointer-events-none overflow-hidden hidden xl:block">
-            <div className="floating-cert absolute left-[15%] top-[20%] w-72 h-48 apple-card p-6 rotate-[-6deg] opacity-40">
-              <div className="flex justify-between items-start mb-8">
-                <div className="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center text-[var(--apple-accent)]">
-                  <span className="material-symbols-outlined text-sm">workspace_premium</span>
-                </div>
-                <span className="text-[10px] font-mono text-slate-400">ID: CV-8829-X</span>
-              </div>
-              <div className="h-2 w-32 bg-slate-100 rounded-full mb-2" />
-              <div className="h-2 w-20 bg-slate-50 rounded-full" />
-            </div>
-            <div className="floating-cert absolute right-[12%] top-[15%] w-72 h-48 apple-card p-6 rotate-[8deg] opacity-40" style={{ animationDelay: '-2s' }}>
-              <div className="flex justify-between items-start mb-8">
-                <div className="w-10 h-10 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-600">
-                  <span className="material-symbols-outlined text-sm">verified</span>
-                </div>
-                <span className="text-[10px] font-mono text-slate-400">ID: CV-4412-M</span>
-              </div>
-              <div className="h-2 w-24 bg-slate-100 rounded-full mb-2" />
-              <div className="h-2 w-40 bg-slate-50 rounded-full" />
-            </div>
-          </div>
-        </section>
-
-        {/* Trusted by */}
-        <section className="border-t border-[var(--apple-border)] bg-white">
-          <div className="max-w-[980px] mx-auto py-16 px-6">
-            <p className="text-center text-[12px] font-semibold text-[var(--apple-text-secondary)] uppercase tracking-[0.2em] mb-12">Trusted by global leading institutions</p>
-            <div className="flex flex-wrap items-center justify-center gap-20 opacity-40 grayscale">
-              <span className="text-2xl font-bold tracking-tighter">IEEE CS SRM</span>
-              <div className="flex items-center gap-3">
-                <span className="material-symbols-outlined text-3xl">groups</span>
-                <span className="text-2xl font-bold">Student Clubs</span>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Mass mailing */}
-        <section className="bg-white">
-          <div className="max-w-[980px] mx-auto py-[120px] px-6 grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
-            <div className="apple-card p-12 bg-[#fbfbfd] border-none shadow-none relative overflow-hidden group">
-              <div className="absolute top-0 right-0 p-8">
-                <span className="material-symbols-outlined text-[var(--apple-accent)] text-6xl opacity-10 group-hover:scale-110 transition-transform duration-500">mail</span>
-              </div>
-              <div className="space-y-4 relative z-10">
-                <div className="flex items-center gap-4 bg-white p-4 rounded-xl border border-[#e8e8ed] shadow-sm transform translate-x-4">
-                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-[var(--apple-accent)]">
-                    <span className="material-symbols-outlined text-sm">send</span>
+            <div className="flex items-center gap-6 mt-4">
+              <div className="flex -space-x-3">
+                {[1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className="w-10 h-10 rounded-full border-2 flex items-center justify-center overflow-hidden bg-slate-800"
+                    style={{ borderColor: STITCH_BG_DARK }}
+                  >
+                    <div className="w-full h-full bg-slate-600 rounded-full" />
                   </div>
-                  <div>
-                    <p className="text-xs font-bold">Bulk Distribution</p>
-                    <p className="text-[10px] text-[var(--apple-text-secondary)]">Sending 1,200 certificates...</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4 bg-white p-4 rounded-xl border border-[#e8e8ed] shadow-sm transform translate-x-12">
-                  <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600">
-                    <span className="material-symbols-outlined text-sm">check_circle</span>
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold">Template Applied</p>
-                    <p className="text-[10px] text-[var(--apple-text-secondary)]">Custom branding active</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4 bg-white p-4 rounded-xl border border-[#e8e8ed] shadow-sm transform translate-x-4">
-                  <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">
-                    <span className="material-symbols-outlined text-sm">schedule</span>
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold">Automatic Delivery</p>
-                    <p className="text-[10px] text-[var(--apple-text-secondary)]">Scheduled for immediate release</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="space-y-8">
-              <h2 className="text-[40px] font-bold tracking-tight leading-tight">Send certificates instantly to everyone.</h2>
-              <p className="text-[18px] text-[var(--apple-text-secondary)] leading-relaxed">
-                Streamline your entire certification workflow. Our mass mailing engine handles automatic delivery, custom email templates, and bulk processing with a single click.
-              </p>
-              <ul className="space-y-4">
-                {['Automatic multi-recipient delivery', 'Fully customizable HTML templates', 'Bulk mailing tracking & analytics'].map((item, i) => (
-                  <li key={i} className="flex items-center gap-3">
-                    <span className="material-symbols-outlined text-blue-500">check_circle</span>
-                    <span className="text-[17px] font-medium">{item}</span>
-                  </li>
                 ))}
-              </ul>
-            </div>
-          </div>
-        </section>
-
-        {/* The Complete Platform */}
-        <section className="max-w-[980px] mx-auto py-[120px] px-6">
-          <div className="text-center mb-20">
-            <h2 className="text-[40px] font-bold tracking-tight mb-4">The Complete Platform</h2>
-            <p className="text-[19px] text-[var(--apple-text-secondary)]">Everything you need to issue and manage credentials.</p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {FEATURES.map((f, i) => (
-              <div key={i} className="apple-card p-12 flex flex-col h-full">
-                <span className={`material-symbols-outlined text-[var(--apple-accent)] text-5xl mb-8`}>{f.icon}</span>
-                <h3 className="text-2xl font-bold mb-4">{f.title}</h3>
-                <p className="text-[var(--apple-text-secondary)] text-[17px] leading-relaxed mb-8">{f.desc}</p>
-                <Link to={f.link} className="mt-auto text-[var(--apple-accent)] font-semibold inline-flex items-center group text-[17px]">
-                  Learn more <span className="material-symbols-outlined text-sm ml-1 group-hover:translate-x-1 transition-transform">arrow_forward_ios</span>
-                </Link>
               </div>
-            ))}
-          </div>
-        </section>
-
-        {/* How It Works */}
-        <section className="bg-[#ffffff] border-y border-[var(--apple-border)]">
-          <div className="max-w-[980px] mx-auto py-[120px] px-6">
-            <div className="text-center mb-24">
-              <h2 className="text-[40px] font-bold tracking-tight mb-4">How It Works</h2>
-              <p className="text-[19px] text-[var(--apple-text-secondary)]">Four steps to absolute credential security.</p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-16">
-              {WORKFLOW.map((w, i) => (
-                <div key={i} className="text-center group">
-                  <div className="w-16 h-16 bg-[#f5f5f7] rounded-full flex items-center justify-center mx-auto mb-8 text-2xl font-bold group-hover:bg-[var(--apple-accent)] group-hover:text-white transition-all duration-300">{i + 1}</div>
-                  <h4 className="font-bold text-xl mb-3">{w.label}</h4>
-                  <p className="text-[var(--apple-text-secondary)] text-[16px] leading-relaxed px-4">{w.desc}</p>
-                </div>
-              ))}
+              <p className="text-sm text-slate-500">
+                <span className="text-white font-bold">1,200+</span> organizers joined this week
+              </p>
             </div>
           </div>
-        </section>
 
-        {/* Benefits + FAQ */}
-        <section className="max-w-[980px] mx-auto py-[120px] px-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-40">
-            {BENEFITS.map((b, i) => (
-              <div key={i} className="apple-card p-10">
-                <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center mb-6">
-                  <span className="material-symbols-outlined text-[var(--apple-accent)]">{b.icon}</span>
+          {/* Right column – glass event pass card */}
+          <div className="relative h-[500px] flex items-center justify-center">
+            <div className="stitch-glass-card w-80 h-[450px] rounded-2xl p-8 flex flex-col justify-between relative z-20 overflow-hidden transform rotate-6 hover:rotate-0 transition-transform duration-700">
+              <div
+                className="absolute top-0 right-0 w-32 h-32 blur-3xl rounded-full"
+                style={{ background: `${STITCH_PRIMARY}33` }}
+              />
+              <div className="flex justify-between items-start">
+                <div className="w-12 h-12 stitch-glass rounded-xl flex items-center justify-center">
+                  <span className="material-symbols-outlined" style={{ color: STITCH_PRIMARY }}>
+                    verified
+                  </span>
                 </div>
-                <h3 className="font-bold text-xl mb-4">{b.title}</h3>
-                <p className="text-[var(--apple-text-secondary)] text-[17px] leading-relaxed">{b.desc}</p>
+                <div className="text-right">
+                  <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Pass ID</p>
+                  <p className="text-xs font-mono text-white">#VTC-2024-882</p>
+                </div>
               </div>
-            ))}
-          </div>
-          <div className="max-w-[720px] mx-auto">
-            <h2 className="text-[32px] font-bold mb-12 text-center">Frequently Asked Questions</h2>
-            <div className="space-y-2">
-              {FAQ_ITEMS.map((item, i) => (
-                <div key={i} className="border-b border-[var(--apple-border)] py-6 group cursor-pointer" onClick={() => setOpenFaq(openFaq === i ? null : i)}>
-                  <div className="flex justify-between items-center text-left font-semibold text-lg group-hover:text-[var(--apple-accent)] transition-colors">
-                    <span>{item.q}</span>
-                    <span className="material-symbols-outlined text-[var(--apple-text-secondary)]">{openFaq === i ? 'expand_less' : 'expand_more'}</span>
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-2xl font-black text-white leading-tight">GLOBAL TECH SUMMIT</h3>
+                  <p className="text-xs font-bold mt-1" style={{ color: STITCH_PRIMARY }}>
+                    NEW YORK CITY • 2024
+                  </p>
+                </div>
+                <div className="py-4 border-y border-white/10 space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-[10px] text-slate-400 uppercase font-bold">Attendee</span>
+                    <span className="text-xs text-white">Sarah Jenkins</span>
                   </div>
-                  {openFaq === i && <p className="text-[var(--apple-text-secondary)] text-[17px] mt-4 leading-relaxed">{item.a}</p>}
+                  <div className="flex justify-between">
+                    <span className="text-[10px] text-slate-400 uppercase font-bold">Access</span>
+                    <span className="text-xs text-white">VIP All-Access</span>
+                  </div>
                 </div>
-              ))}
+              </div>
+              <div className="flex flex-col items-center gap-4">
+                <div className="w-full h-12 bg-white flex items-center justify-center rounded-lg p-1">
+                  <div className="w-full h-full bg-slate-900 rounded flex items-center justify-center">
+                    <span className="material-symbols-outlined text-white text-3xl">qr_code_2</span>
+                  </div>
+                </div>
+                <p className="text-[8px] text-slate-500 tracking-tighter uppercase font-bold">
+                  Encrypted via Ventarc Protocol
+                </p>
+              </div>
+            </div>
+            <div className="absolute top-10 right-[-20px] w-24 h-24 stitch-glass rounded-full flex items-center justify-center z-10 blur-[1px]">
+              <span className="material-symbols-outlined text-white text-3xl opacity-50">calendar_today</span>
+            </div>
+            <div className="absolute bottom-10 left-[-20px] w-32 h-32 stitch-glass rounded-2xl flex items-center justify-center z-30 blur-[2px] -rotate-12">
+              <span className="material-symbols-outlined text-white text-5xl opacity-40">mail</span>
             </div>
           </div>
-        </section>
-
-        {/* Final CTA */}
-        <section className="max-w-[980px] mx-auto pb-32 px-6">
-          <div className="apple-card bg-white p-24 text-center">
-            <h2 className="text-[48px] font-bold tracking-tight mb-10 leading-none">Ready to issue certificates?</h2>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
-              <Link to="/for-clubs" className="bg-[var(--apple-accent)] text-white px-10 py-4 rounded-full font-medium text-[19px] hover:brightness-110 transition-all shadow-lg shadow-blue-500/20">
-                Start for Free
-              </Link>
-              <Link to="/verify" className="bg-white border border-[#e8e8ed] text-[var(--apple-text-primary)] px-10 py-4 rounded-full font-medium text-[19px] hover:bg-slate-50 transition-all inline-flex items-center">
-                Verify Certificate
-              </Link>
-            </div>
-            <p className="mt-8 text-[var(--apple-text-secondary)] text-sm">No credit card required for the free tier.</p>
-          </div>
-        </section>
+        </div>
       </main>
-    </CertVaultLayout>
+
+      {/* Stats – exact Stitch */}
+      <section className="relative z-10 px-6 lg:px-20 pb-20">
+        <div className="max-w-[1200px] mx-auto grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            { label: 'Events Hosted', value: '10k+', extra: '15%', green: true },
+            { label: 'Satisfaction', value: '99.9%', extra: '5%', green: true },
+            { label: 'Check-in', value: '< 2s', extra: '40%', green: true },
+            { label: 'Success Rate', value: '100%', extra: 'Verified', green: false },
+          ].map((stat, i) => (
+            <div key={i} className="p-8 stitch-glass rounded-2xl border-white/5 flex flex-col gap-2">
+              <p className="text-slate-400 text-sm font-medium">{stat.label}</p>
+              <div className="flex items-end gap-2">
+                <p className="text-3xl font-black text-white">{stat.value}</p>
+                <p
+                  className={`text-xs font-bold pb-1 flex items-center ${
+                    stat.green ? 'text-green-400' : ''
+                  }`}
+                  style={!stat.green ? { color: STITCH_PRIMARY } : {}}
+                >
+                  {stat.green && <span className="material-symbols-outlined text-xs">trending_up</span>}
+                  {stat.extra}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Bokeh dots – exact Stitch */}
+      <div className="absolute top-[30%] left-[10%] w-4 h-4 rounded-full bg-white opacity-20 blur-sm pointer-events-none" />
+      <div
+        className="absolute top-[60%] right-[15%] w-6 h-6 rounded-full opacity-30 blur-md pointer-events-none"
+        style={{ background: STITCH_PRIMARY }}
+      />
+      <div className="absolute bottom-[20%] left-[40%] w-3 h-3 rounded-full bg-purple-500 opacity-20 blur-sm pointer-events-none" />
+
+      {/* Minimal footer – link to rest of site */}
+      <footer className="relative z-10 border-t border-white/10 py-8 px-6 lg:px-20">
+        <div className="max-w-[1200px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-slate-500 text-sm">Event Management, Reimagined.</p>
+          <div className="flex items-center gap-6">
+            <Link to="/how-it-works" className="text-sm text-slate-400 hover:text-white transition-colors no-underline">
+              How It Works
+            </Link>
+            <Link to="/verify" className="text-sm text-slate-400 hover:text-white transition-colors no-underline">
+              Verify
+            </Link>
+            <Link to="/login" className="text-sm font-medium no-underline" style={{ color: STITCH_PRIMARY }}>
+              Login
+            </Link>
+          </div>
+        </div>
+      </footer>
+    </div>
   );
 }

@@ -94,6 +94,17 @@ app.all('/api/certvault', async (req, res) => {
   await handleVercelRoute(handler, req, res);
 });
 
+// Ultron 9.0 API (hackathon management)
+try {
+  const ultronHandler = (await import('./api/ultron.js')).default;
+  app.all('/api/ultron', async (req, res) => {
+    await handleVercelRoute(ultronHandler, req, res);
+  });
+  console.log('[CertVault] Ultron API mounted at /api/ultron');
+} catch (e) {
+  console.warn('[CertVault] Ultron API not loaded:', e.message);
+}
+
 // Static build
 const distPath = join(__dirname, 'dist');
 app.use(express.static(distPath, { index: false }));

@@ -53,6 +53,10 @@ export const insert = mutation({
     status: v.string(),
     pdf_url: v.optional(v.string()),
     cloudinary_public_id: v.optional(v.string()),
+    email_send_status: v.optional(v.string()),
+    email_sent_at: v.optional(v.string()),
+    email_message_id: v.optional(v.string()),
+    email_last_error: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const id = await ctx.db.insert("certificates", args);
@@ -102,6 +106,26 @@ export const updatePdfByCertificateId = mutation({
       .unique();
     if (!cert) return null;
     await ctx.db.patch(cert._id, { pdf_url, ...(cloudinary_public_id != null && { cloudinary_public_id }) });
+    return await ctx.db.get(cert._id);
+  },
+});
+
+/** Update email delivery state by certificate_id */
+export const updateEmailDelivery = mutation({
+  args: {
+    certificate_id: v.string(),
+    email_send_status: v.optional(v.string()),
+    email_sent_at: v.optional(v.string()),
+    email_message_id: v.optional(v.string()),
+    email_last_error: v.optional(v.string()),
+  },
+  handler: async (ctx, { certificate_id, ...patch }) => {
+    const cert = await ctx.db
+      .query("certificates")
+      .withIndex("by_certificate_id", (q) => q.eq("certificate_id", certificate_id))
+      .unique();
+    if (!cert) return null;
+    await ctx.db.patch(cert._id, patch);
     return await ctx.db.get(cert._id);
   },
 });

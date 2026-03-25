@@ -87,7 +87,7 @@ function InteractiveDotGrid() {
           scale = 1 + smooth * 0.6;
           if (smooth > 0.3) {
             blur = smooth * 2;
-            color = theme.accent;
+            color = 'var(--ventarc-accent, #7c3aed)';
           }
         }
         return (
@@ -106,7 +106,7 @@ function InteractiveDotGrid() {
               background: color,
               opacity,
               transform: `scale(${scale})`,
-              boxShadow: blur > 0 ? `0 0 ${blur * 4}px ${theme.accent}40` : 'none',
+              boxShadow: blur > 0 ? `0 0 ${blur * 4}px rgba(124, 58, 237, 0.4)` : 'none',
               transition: 'opacity 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease',
             }}
           />
@@ -150,7 +150,7 @@ function CursorGlowSimple() {
         height: 360,
         marginLeft: -180,
         marginTop: -180,
-        background: 'radial-gradient(circle, rgba(0,113,227,0.14) 0%, rgba(0,113,227,0.05) 35%, transparent 65%)',
+        background: 'radial-gradient(circle, rgba(124,58,237,0.14) 0%, rgba(124,58,237,0.05) 35%, transparent 65%)',
         borderRadius: '50%',
         pointerEvents: 'none',
         zIndex: 0,
@@ -160,7 +160,7 @@ function CursorGlowSimple() {
   );
 }
 
-const CERTVAULT_NAV = [
+const VENTARC_NAV = [
   { path: '/', label: 'Home' },
   { path: '/how-it-works', label: 'How It Works' },
   { path: '/for-clubs', label: 'For Clubs' },
@@ -208,7 +208,7 @@ export default function CertVaultLayout({ children }) {
           inset: 0,
           zIndex: 0,
           pointerEvents: 'none',
-          background: 'radial-gradient(ellipse 100% 80% at 50% -20%, rgba(0,113,227,0.04) 0%, transparent 50%)',
+          background: 'radial-gradient(ellipse 100% 80% at 50% -20%, rgba(124,58,237,0.06) 0%, transparent 50%)',
         }}
       />
       <style>{`
@@ -225,24 +225,24 @@ export default function CertVaultLayout({ children }) {
             <Link to="/" className="flex flex-col gap-0.5 group cursor-pointer text-[var(--apple-text-primary)] no-underline">
               <div className="flex items-center gap-2">
                 {logoUrl && logoUrl !== DEFAULT_LOGO ? (
-                  <img src={logoUrl} alt="CertVault" className="h-8 w-auto object-contain" />
+                  <img src={logoUrl} alt="Ventarc" className="h-8 w-auto object-contain" />
                 ) : (
-                  <span className="material-symbols-outlined text-[var(--apple-accent)] text-[28px]">verified_user</span>
+                  <span className="material-symbols-outlined text-[var(--ventarc-accent)] text-[28px]">event</span>
                 )}
-                <span className="text-[21px] font-semibold tracking-tight">CertVault</span>
+                <span className="text-[21px] font-semibold tracking-tight">Ventarc</span>
               </div>
-              <span className="text-[10px] font-medium text-[var(--apple-text-secondary)] uppercase tracking-widest opacity-70">A GradeX Product</span>
+              <span className="text-[10px] font-medium text-[var(--apple-text-secondary)] uppercase tracking-widest opacity-70">Event Management, Reimagined.</span>
             </Link>
             <div className="certvault-center hidden lg:block flex-1" aria-hidden />
             <nav className="certvault-nav-wrap flex items-center gap-6 lg:gap-8">
-              {CERTVAULT_NAV.map(({ path, label, pill }) => {
+              {VENTARC_NAV.map(({ path, label, pill }) => {
                 const isActive = location.pathname === path || (path === '/' && location.pathname === '/');
                 if (pill) {
                   return (
                     <Link
                       key={path}
                       to={path}
-                      className="ml-2 sm:ml-4 bg-[var(--apple-accent)] text-white px-4 py-1.5 rounded-full text-[12px] font-medium hover:brightness-110 transition-all no-underline"
+                      className="ml-2 sm:ml-4 bg-[var(--ventarc-accent)] text-white px-4 py-1.5 rounded-full text-[12px] font-medium hover:opacity-95 hover:brightness-110 transition-all no-underline"
                     >
                       {label}
                     </Link>
@@ -253,7 +253,7 @@ export default function CertVaultLayout({ children }) {
                     key={path}
                     to={path}
                     className={`text-[12px] font-medium uppercase tracking-widest no-underline transition-colors ${
-                      isActive ? 'text-[var(--apple-accent)]' : 'text-[var(--apple-text-secondary)] hover:text-[var(--apple-accent)]'
+                      isActive ? 'text-[var(--ventarc-accent)]' : 'text-[var(--apple-text-secondary)] hover:text-[var(--ventarc-accent)]'
                     }`}
                   >
                     {label}

@@ -49,6 +49,10 @@ export const create = mutation({
     name: v.string(),
     event_date: v.optional(v.string()),
     download_slug: v.optional(v.string()),
+    template_asset_url: v.optional(v.string()),
+    template_asset_public_id: v.optional(v.string()),
+    template_settings: v.optional(v.any()),
+    participant_csv: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const id = await ctx.db.insert("events", args);
@@ -75,6 +79,39 @@ export const updateDownloadSlug = mutation({
     const event = await ctx.db.get(id);
     if (!event || event.organization_id !== organization_id) return null;
     await ctx.db.patch(id, { download_slug: download_slug || undefined });
+    return await ctx.db.get(id);
+  },
+});
+
+/** Update persisted wizard/template config for an event */
+export const updateTemplateConfig = mutation({
+  args: {
+    id: v.id("events"),
+    organization_id: v.id("organizations"),
+    template_asset_url: v.optional(v.union(v.string(), v.null())),
+    template_asset_public_id: v.optional(v.union(v.string(), v.null())),
+    template_settings: v.optional(v.any()),
+    participant_csv: v.optional(v.string()),
+  },
+  handler: async (ctx, { id, organization_id, template_asset_url, template_asset_public_id, template_settings, participant_csv }) => {
+    const event = await ctx.db.get(id);
+    if (!event || event.organization_id !== organization_id) return null;
+
+    const patch = {};
+    if (template_asset_url !== undefined) {
+      patch.template_asset_url = template_asset_url || undefined;
+    }
+    if (template_asset_public_id !== undefined) {
+      patch.template_asset_public_id = template_asset_public_id || undefined;
+    }
+    if (template_settings !== undefined) {
+      patch.template_settings = template_settings;
+    }
+    if (participant_csv !== undefined) {
+      patch.participant_csv = participant_csv;
+    }
+
+    await ctx.db.patch(id, patch);
     return await ctx.db.get(id);
   },
 });

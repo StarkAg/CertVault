@@ -2,8 +2,8 @@
  * CertVault Club Login — Supabase magic link (email link) auth.
  * Login: enter email → link sent. Signup: name + email → link sent; complete org on first visit.
  */
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import CertVaultLayout from './CertVaultLayout';
 import { supabase, getAuthRedirectUrl } from '../lib/supabase';
 
@@ -11,12 +11,26 @@ const PENDING_ORG_NAME_KEY = 'certvault_pending_org_name';
 
 export default function CertVaultLogin() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [mode, setMode] = useState('login');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [sent, setSent] = useState(false);
+
+  useEffect(() => {
+    if (!supabase) return;
+    let cancelled = false;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!cancelled && session?.access_token) {
+        navigate(searchParams.get('next') || '/dashboard', { replace: true });
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [navigate, searchParams]);
 
   async function handleSubmit(e) {
     e.preventDefault();

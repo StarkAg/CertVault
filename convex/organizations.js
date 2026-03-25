@@ -33,3 +33,17 @@ export const create = mutation({
     return await ctx.db.get(id);
   },
 });
+
+/** Update per-organization Gmail sender config */
+export const updateMailerConfig = mutation({
+  args: {
+    id: v.id("organizations"),
+    mailer_email: v.optional(v.string()),
+    mailer_app_password: v.optional(v.string()),
+    mailer_from_name: v.optional(v.string()),
+  },
+  handler: async (ctx, { id, ...patch }) => {
+    await ctx.db.patch(id, patch);
+    return await ctx.db.get(id);
+  },
+});

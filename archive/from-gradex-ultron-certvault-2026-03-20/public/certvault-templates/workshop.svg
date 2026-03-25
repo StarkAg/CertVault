@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600">
+  <defs>
+    <linearGradient id="bg3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0c4a6e"/>
+      <stop offset="100%" style="stop-color:#075985"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg3)"/>
+  <rect x="60" y="60" width="680" height="480" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2" rx="8"/>
+  <text x="400" y="310" text-anchor="middle" font-family="Arial, sans-serif" font-size="46" fill="#fff">Participant Name</text>
+  <text x="400" y="500" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="rgba(255,255,255,0.7)">Workshop Completion Certificate</text>
+</svg>

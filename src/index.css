@@ -8,6 +8,17 @@
   --apple-text-secondary: #6e6e73;
   --apple-accent: #0071e3;
   --apple-radius: 18px;
+  /* VentArc: event platform branding (purple) */
+  --ventarc-accent: #7c3aed;
+  --ventarc-accent-hover: #6d28d9;
+  --ventarc-bg-subtle: rgba(124, 58, 237, 0.06);
+  --ventarc-border: rgba(124, 58, 237, 0.2);
+  /* Ultron 9.0 theme (dark) */
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --bg-primary: #0f172a;
+  --hover-bg: rgba(255, 255, 255, 0.06);
+  --border-color: rgba(248, 113, 113, 0.3);
 }
 
 * { box-sizing: border-box; }
@@ -53,4 +64,37 @@ body {
   display: inline-block;
   white-space: nowrap;
   word-wrap: normal;
+}
+
+/* Stitch Ventarc hero – exact styles from Stitch export */
+.stitch-glass {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.stitch-glass-card {
+  background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.02) 100%);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.15);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+.stitch-orb {
+  border-radius: 50%;
+  filter: blur(60px);
+  position: absolute;
+  z-index: 0;
+}
+.stitch-perspective-grid {
+  background-image: linear-gradient(rgba(13, 32, 242, 0.1) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(13, 32, 242, 0.1) 1px, transparent 1px);
+  background-size: 50px 50px;
+  transform: perspective(500px) rotateX(60deg);
+  mask-image: linear-gradient(to bottom, transparent, black);
+}
+.stitch-text-gradient {
+  background: linear-gradient(to right, #ffffff, #9c9eba);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }

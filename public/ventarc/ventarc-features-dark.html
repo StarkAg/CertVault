@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>VENTARC - Features</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "error": "#ffb4ab",
+              "tertiary-fixed": "#5f5e5e",
+              "surface-tint": "#c6c6c7",
+              "inverse-surface": "#e2e2e2",
+              "surface-container-low": "#1b1b1b",
+              "on-background": "#e2e2e2",
+              "surface": "#131313",
+              "tertiary-container": "#929090",
+              "on-secondary-fixed": "#1a1c1c",
+              "on-error-container": "#ffdad6",
+              "on-primary": "#1a1c1c",
+              "background": "#131313",
+              "inverse-on-surface": "#303030",
+              "on-tertiary-container": "#000000",
+              "on-secondary-fixed-variant": "#3a3c3c",
+              "secondary-fixed": "#c7c6c6",
+              "on-surface-variant": "#c6c6c6",
+              "on-secondary-container": "#e3e2e2",
+              "secondary-fixed-dim": "#ababab",
+              "primary": "#ffffff",
+              "on-surface": "#e2e2e2",
+              "inverse-primary": "#5d5f5f",
+              "secondary": "#c7c6c6",
+              "surface-bright": "#393939",
+              "primary-fixed-dim": "#454747",
+              "on-error": "#690005",
+              "surface-container-high": "#2a2a2a",
+              "surface-container-highest": "#353535",
+              "surface-dim": "#131313",
+              "on-primary-fixed": "#ffffff",
+              "secondary-container": "#464747",
+              "surface-variant": "#353535",
+              "on-secondary": "#1a1c1c",
+              "surface-container": "#1f1f1f",
+              "tertiary": "#e4e2e1",
+              "tertiary-fixed-dim": "#474747",
+              "on-primary-container": "#000000",
+              "surface-container-lowest": "#0e0e0e",
+              "outline-variant": "#474747",
+              "outline": "#919191",
+              "on-tertiary": "#1b1c1c",
+              "on-primary-fixed-variant": "#e2e2e2",
+              "error-container": "#93000a",
+              "on-tertiary-fixed-variant": "#e4e2e1",
+              "primary-container": "#d4d4d4",
+              "primary-fixed": "#5d5f5f",
+              "on-tertiary-fixed": "#ffffff"
+            },
+            fontFamily: {
+              "headline": ["Inter"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+        .kinetic-glass {
+            background: rgba(53, 53, 53, 0.6);
+            backdrop-filter: blur(20px);
+        }
+        .liquid-silver {
+            background: linear-gradient(135deg, #ffffff 0%, #d4d4d4 100%);
+        }
+        .ghost-shadow {
+            box-shadow: 0 40px 80px -20px rgba(226, 226, 226, 0.12);
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopNavBar -->
+<nav class="fixed top-0 w-full z-50 flex justify-between items-center px-8 h-20 bg-[#131313]">
+<a href="/" target="_top" class="text-2xl font-black tracking-tighter text-[#ffffff] uppercase no-underline hover:opacity-90">VENTARC</a>
+<div class="hidden md:flex items-center space-x-8 font-['Inter'] font-medium tracking-tight text-sm">
+<a class="text-[#ffffff] border-b-2 border-[#ffffff] pb-1 hover:text-[#ffffff] transition-colors duration-300 scale-95 active:scale-100 transition-transform" href="/features" target="_top">Features</a>
+<a class="text-[#c6c6c6] hover:text-[#ffffff] transition-colors duration-300 scale-95 active:scale-100 transition-transform" href="/solutions" target="_top">Solutions</a>
+<a class="text-[#c6c6c6] hover:text-[#ffffff] transition-colors duration-300 scale-95 active:scale-100 transition-transform" href="/pricing" target="_top">Pricing</a>
+<a class="text-[#c6c6c6] hover:text-[#ffffff] transition-colors duration-300 scale-95 active:scale-100 transition-transform" href="/resources" target="_top">Resources</a>
+</div>
+<div class="flex items-center space-x-6">
+<a href="/login" target="_top" class="font-['Inter'] font-medium tracking-tight text-sm text-[#c6c6c6] hover:text-[#ffffff] transition-colors duration-300 no-underline">Login</a>
+<a href="/dashboard" target="_top" class="liquid-silver text-on-primary px-6 py-2 text-sm font-bold uppercase tracking-widest rounded-sm transition-transform active:scale-95 shadow-lg no-underline inline-block">Create Event</a>
+</div>
+</nav>
+<main class="pt-32 pb-20 px-8 max-w-7xl mx-auto">
+<!-- Hero Section -->
+<section class="mb-32 relative">
+<div class="absolute -top-20 -left-20 w-96 h-96 bg-primary opacity-[0.02] blur-[120px] rounded-full"></div>
+<h1 class="text-6xl md:text-8xl font-black tracking-tighter text-primary mb-8 mt-8 leading-[0.9]">
+                ENGINEERED <br/> <span class="text-on-surface-variant">EXPERIENCES.</span>
+</h1>
+<p class="max-w-xl text-lg text-on-surface-variant leading-relaxed mb-12">
+                End-to-end event flow for clubs and organizations: import participant CSV, generate team ID QR codes, email them to attendees, run check-in with the web scanner, collect post-event feedback, then assign certificate IDs and generate PNG certificates for everyone—powered by CertVault.
+            </p>
+</section>
+<!-- Bento Grid Features -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-8">
+<!-- Smart Registrations (The Large Anchor) -->
+<div class="md:col-span-8 bg-surface-container rounded-xl overflow-hidden relative border border-white/5 flex flex-col justify-end p-12 min-h-[500px] group transition-all duration-500 hover:bg-surface-container-high">
+<div class="absolute top-0 left-0 w-full h-full">
+<img class="w-full h-full object-cover opacity-20 grayscale group-hover:scale-105 transition-transform duration-700" data-alt="Abstract dark technological digital network background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB1FbQPP090ZDm0fJzrmP82nY7zRgIIh6fsIikih79LWdrigGoeOZ35oSPXtCHndwbx9-YrGci5FkJfmVUeTwbBrCHHEpjR9OOnuMvDtugw26HH4nqP8b8ldkqsRYu8REOL3pknV91o8YoahQypUW33VoNkhHeaoKbGYY5-7kk0N8hpy1iOVyMqWcqxNS_fMGgEgjKQ1cyl5IXE3s16ymS0p98kyx-C2FKatDEY1oMZwSoMIhA_hpaR0hMA3lX_-6LFBMKrTD6I220"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container via-transparent to-transparent"></div>
+</div>
+<div class="relative z-10">
+<span class="material-symbols-outlined text-4xl mb-6 text-primary" data-icon="upload_file">upload_file</span>
+<h2 class="text-4xl font-black tracking-tight text-primary mb-4 uppercase">CSV Import &amp; Team IDs</h2>
+<p class="text-on-surface-variant max-w-md text-lg">
+                        Upload your participant list as CSV. We generate unique team ID QR codes for each person and email them so everyone has their pass before the event.
+                    </p>
+<div class="mt-8 flex gap-4">
+<div class="px-4 py-2 bg-surface-container-highest rounded-sm text-xs font-bold tracking-widest uppercase border border-white/10">QR Codes</div>
+<div class="px-4 py-2 bg-surface-container-highest rounded-sm text-xs font-bold tracking-widest uppercase border border-white/10">Email Delivery</div>
+</div>
+</div>
+</div>
+<!-- QR Check-in (The Tech Module) -->
+<div class="md:col-span-4 bg-surface-container rounded-xl p-10 border border-white/5 flex flex-col justify-between hover:bg-surface-container-high transition-colors">
+<div>
+<span class="material-symbols-outlined text-3xl mb-8 text-primary" data-icon="qr_code_2">qr_code_2</span>
+<h3 class="text-2xl font-bold tracking-tight text-primary mb-4 uppercase">Web Check-in</h3>
+<p class="text-on-surface-variant text-sm leading-relaxed">
+                        Use our web scanner to check in participants at the door. They show their QR code; you scan and mark them in—no app required.
+                    </p>
+</div>
+<div class="mt-12 p-6 bg-surface-container-lowest rounded-lg flex items-center justify-center border border-white/5 ghost-shadow relative overflow-hidden group">
+<div class="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+<img class="w-32 h-32 opacity-80" data-alt="Stylized QR code graphic on dark background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDe08Z7w6EE-8Jv0XaDbvNcPlr09mTU6LTphgBTNPidR9QK0FiA208PbYDcIN2xMvTDz5UFG8ulBe4V-gH4Os1tKjYDGavGt3SQ0j9aTmXhDC2fu6Uyy5-8pi2ax-WtFoAOhDudDF7_Z9-e_8h9L--jUPl9MGM6EdT6Ba4Z9FK6oLY-d3MEu37ogJqd-TcK1-m-Ehp-FyrrT9KF3X5d4-H5TyjwdmXoSBGXPR8BL3W31QtnjwydScIQ3F94eM-FtTEJWNsb2WMhXQc"/>
+</div>
+</div>
+<!-- CertVault (The Volumetric Highlight) -->
+<div class="md:col-span-5 bg-surface-container-lowest rounded-xl p-10 border border-white/5 flex flex-col relative overflow-hidden">
+<div class="absolute -right-20 -bottom-20 w-64 h-64 bg-primary opacity-[0.03] blur-[80px] rounded-full"></div>
+<div class="relative z-10">
+<span class="material-symbols-outlined text-3xl mb-8 text-primary" data-icon="verified">verified</span>
+<h3 class="text-2xl font-bold tracking-tight text-primary mb-4 uppercase">Certificates</h3>
+<p class="text-on-surface-variant text-sm leading-relaxed mb-10">
+                        After the event, assign a certificate ID to every participant and generate downloadable PNG certificates. Verifiable credentials powered by CertVault.
+                    </p>
+<div class="space-y-4">
+<div class="p-4 bg-surface-container rounded-lg border-l-2 border-primary flex items-center justify-between">
+<span class="text-xs font-bold tracking-tighter uppercase">Certificate ID per participant</span>
+<span class="material-symbols-outlined text-sm text-primary" data-icon="verified" data-weight="fill" style="font-variation-settings: 'FILL' 1;">verified</span>
+</div>
+<div class="p-4 bg-surface-container rounded-lg border-l-2 border-outline-variant flex items-center justify-between">
+<span class="text-xs font-bold tracking-tighter uppercase">PNG certificate download</span>
+<span class="material-symbols-outlined text-sm text-primary">download</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Kinetic Timeline (Horizontal Technical Scrubber) -->
+<div class="md:col-span-7 bg-surface-container rounded-xl p-10 border border-white/5">
+<div class="flex justify-between items-start mb-12">
+<div>
+<h3 class="text-2xl font-bold tracking-tight text-primary mb-2 uppercase">Feedback &amp; Live Check-in</h3>
+<p class="text-on-surface-variant text-xs tracking-widest uppercase">Collect feedback after the event, then issue certificates</p>
+</div>
+<span class="text-[10px] bg-primary text-on-primary font-black px-2 py-1 rounded-sm uppercase tracking-tighter">Post-event</span>
+</div>
+<div class="relative h-24 w-full bg-surface-container-lowest rounded-lg border border-white/5 flex items-end px-6 pb-4">
+<!-- Timeline Ticks -->
+<div class="absolute inset-0 flex items-end justify-between px-6 pb-2">
+<div class="h-4 w-px bg-outline-variant"></div>
+<div class="h-2 w-px bg-outline-variant opacity-30"></div>
+<div class="h-2 w-px bg-outline-variant opacity-30"></div>
+<div class="h-2 w-px bg-outline-variant opacity-30"></div>
+<div class="h-4 w-px bg-outline-variant"></div>
+<div class="h-2 w-px bg-outline-variant opacity-30"></div>
+<div class="h-2 w-px bg-outline-variant opacity-30"></div>
+<div class="h-2 w-px bg-outline-variant opacity-30"></div>
+<div class="h-8 w-[2px] bg-primary relative">
+<div class="absolute -top-12 left-1/2 -translate-x-1/2 flex flex-col items-center">
+<span class="text-[10px] font-bold text-primary mb-1">14:00</span>
+<div class="w-1 h-1 bg-primary rounded-full animate-pulse shadow-[0_0_15px_#ffffff]"></div>
+</div>
+</div>
+<div class="h-2 w-px bg-outline-variant opacity-30"></div>
+<div class="h-2 w-px bg-outline-variant opacity-30"></div>
+<div class="h-2 w-px bg-outline-variant opacity-30"></div>
+<div class="h-4 w-px bg-outline-variant"></div>
+<div class="h-2 w-px bg-outline-variant opacity-30"></div>
+<div class="h-2 w-px bg-outline-variant opacity-30"></div>
+<div class="h-2 w-px bg-outline-variant opacity-30"></div>
+<div class="h-4 w-px bg-outline-variant"></div>
+</div>
+<!-- Activity Peaks -->
+<div class="flex items-end gap-[2px] w-full">
+<div class="h-8 w-full bg-surface-variant/30 rounded-t-[1px]"></div>
+<div class="h-12 w-full bg-surface-variant/30 rounded-t-[1px]"></div>
+<div class="h-16 w-full bg-surface-variant/30 rounded-t-[1px]"></div>
+<div class="h-10 w-full bg-surface-variant/30 rounded-t-[1px]"></div>
+<div class="h-6 w-full bg-surface-variant/30 rounded-t-[1px]"></div>
+<div class="h-14 w-full bg-primary/20 rounded-t-[1px]"></div>
+<div class="h-20 w-full bg-primary/40 rounded-t-[1px]"></div>
+<div class="h-12 w-full bg-surface-variant/30 rounded-t-[1px]"></div>
+<div class="h-8 w-full bg-surface-variant/30 rounded-t-[1px]"></div>
+</div>
+</div>
+<div class="mt-8 grid grid-cols-3 gap-4">
+<div class="text-center">
+<p class="text-on-surface-variant text-[10px] uppercase tracking-widest mb-1">Total Flow</p>
+<p class="text-xl font-black text-primary">12.4K</p>
+</div>
+<div class="text-center border-x border-white/5">
+<p class="text-on-surface-variant text-[10px] uppercase tracking-widest mb-1">Peak Velocity</p>
+<p class="text-xl font-black text-primary">840/m</p>
+</div>
+<div class="text-center">
+<p class="text-on-surface-variant text-[10px] uppercase tracking-widest mb-1">Latency</p>
+<p class="text-xl font-black text-primary">14ms</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Call to Action -->
+<section class="mt-40 text-center relative py-24 border-y border-white/5">
+<div class="absolute inset-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent"></div>
+<h2 class="text-5xl font-black tracking-tighter text-primary mb-6 uppercase">Ready to run your event?</h2>
+<p class="text-on-surface-variant max-w-lg mx-auto mb-10 text-sm tracking-wide">
+                From CSV to certificates—one platform for clubs and organizations. Create your event and send QR codes to participants in minutes.
+            </p>
+<div class="flex flex-col md:flex-row gap-6 justify-center items-center">
+<button class="liquid-silver text-on-primary px-10 py-4 text-sm font-black uppercase tracking-[0.2em] rounded-sm transition-transform active:scale-95 shadow-2xl">
+                    Get Started Now
+                </button>
+<button class="text-primary px-10 py-4 text-sm font-bold uppercase tracking-[0.2em] border border-white/20 hover:bg-white/5 transition-colors">
+                    Request Demo
+                </button>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="w-full py-12 px-8 flex flex-col md:flex-row justify-between items-center bg-[#0e0e0e] border-t border-[#1f1f1f]">
+<div class="text-lg font-bold text-[#ffffff] mb-8 md:mb-0">VENTARC</div>
+<div class="flex flex-wrap justify-center gap-8 mb-8 md:mb-0">
+<a class="font-['Inter'] font-light text-xs tracking-widest uppercase text-[#474747] hover:text-[#ffffff] transition-all opacity-80 hover:opacity-100" href="#">Product</a>
+<a class="font-['Inter'] font-light text-xs tracking-widest uppercase text-[#474747] hover:text-[#ffffff] transition-all opacity-80 hover:opacity-100" href="#">Company</a>
+<a class="font-['Inter'] font-light text-xs tracking-widest uppercase text-[#474747] hover:text-[#ffffff] transition-all opacity-80 hover:opacity-100" href="#">Connect</a>
+<a class="font-['Inter'] font-light text-xs tracking-widest uppercase text-[#474747] hover:text-[#ffffff] transition-all opacity-80 hover:opacity-100" href="#">Privacy</a>
+<a class="font-['Inter'] font-light text-xs tracking-widest uppercase text-[#474747] hover:text-[#ffffff] transition-all opacity-80 hover:opacity-100" href="#">Terms</a>
+</div>
+<div class="font-['Inter'] font-light text-[10px] tracking-widest uppercase text-[#474747]">
+            © 2024 VENTARC. THE KINETIC MONOLITH.
+        </div>
+</footer>
+<script>if(window!==window.parent){var n=document.querySelector('nav.fixed');if(n)n.style.display='none';var m=document.querySelector('main');if(m)m.style.paddingTop='0';}</script>
+</body></html>

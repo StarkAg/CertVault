@@ -25,11 +25,12 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { getConvexClient, isConvexConfigured, docToApi, docsToApi, api } from '../lib/convex.js';
-import { uploadCertificate, deleteCertificate, isCloudinaryConfigured } from '../lib/cloudinary.js';
+import { uploadCertificate, deleteCertificate, uploadTemplateImage, isCloudinaryConfigured } from '../lib/cloudinary.js';
 import { writeFile, unlink } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import crypto from 'crypto';
+import nodemailer from 'nodemailer';
 
 const supabaseUrl = process.env.SUPABASE_URL?.trim();
 const supabaseServerKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() || process.env.SUPABASE_ANON_KEY?.trim();
@@ -191,6 +192,162 @@ function generateSlug(name) {
     .substring(0, 50);
 }
 
+function serializeOrganization(org) {
+  if (!org) return null;
+  return {
+    id: org._id,
+    name: org.name,
+    slug: org.slug,
+    email: org.email,
+    mailer_email: org.mailer_email || '',
+    mailer_from_name: org.mailer_from_name || '',
+    has_mailer_app_password: Boolean(org.mailer_app_password),
+  };
+}
+
+function serializeCertificate(cert) {
+  return {
+    id: cert._id,
+    certificate_id: cert.certificate_id,
+    recipient_name: cert.recipient_name,
+    recipient_email: cert.recipient_email,
+    category: cert.category,
+    date_issued: cert.date_issued,
+    status: cert.status,
+    pdf_url: cert.pdf_url,
+    email_send_status: cert.email_send_status || 'pending',
+    email_sent_at: cert.email_sent_at,
+    email_message_id: cert.email_message_id,
+    email_last_error: cert.email_last_error,
+  };
+}
+
+function getBaseUrl(req) {
+  const explicitPublic = process.env.PUBLIC_URL?.trim().replace(/\/$/, '');
+  if (explicitPublic) return explicitPublic;
+  if (process.env.RAILWAY_PUBLIC_DOMAIN) {
+    return `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`;
+  }
+  const forwardedProto = req.headers['x-forwarded-proto'];
+  const forwardedHost = req.headers['x-forwarded-host'];
+  if (forwardedProto && forwardedHost) {
+    return `${forwardedProto}://${forwardedHost}`.replace(/\/$/, '');
+  }
+  const origin = req.headers.origin;
+  if (origin) return String(origin).replace(/\/$/, '');
+  const host = req.headers.host;
+  if (host) {
+    const proto = /localhost|127\.0\.0\.1/i.test(host) ? 'http' : 'https';
+    return `${proto}://${host}`.replace(/\/$/, '');
+  }
+  return 'http://localhost:5174';
+}
+
+function getVerifyLineText(req) {
+  return `Verify this certificate at ${getBaseUrl(req)}/verify?id={certificate_id}`;
+}
+
+function normalizeTemplateSettings(settings, req) {
+  const safeSettings = settings && typeof settings === 'object' ? { ...settings } : {};
+  const currentVerifyLine = typeof safeSettings.verify_line_text === 'string' ? safeSettings.verify_line_text.trim() : '';
+  if (!currentVerifyLine || currentVerifyLine.includes('gradex.bond/certvault/verify')) {
+    safeSettings.verify_line_text = getVerifyLineText(req);
+  }
+  return safeSettings;
+}
+
+async function fetchUrlAsDataUrl(url) {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Could not fetch template asset (HTTP ${response.status})`);
+  }
+  const contentType = response.headers.get('content-type') || 'image/png';
+  const arrayBuffer = await response.arrayBuffer();
+  return `data:${contentType};base64,${Buffer.from(arrayBuffer).toString('base64')}`;
+}
+
+async function resolveTemplateSource(template, event) {
+  if (template) return template;
+  if (event?.template_asset_url) {
+    return await fetchUrlAsDataUrl(event.template_asset_url);
+  }
+  return null;
+}
+
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').trim());
+}
+
+function buildEventSlug(name) {
+  return String(name || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 80) || 'event';
+}
+
+function buildSendSummary(certificates) {
+  const all = certificates || [];
+  return {
+    total: all.length,
+    sent: all.filter((c) => c.email_send_status === 'sent').length,
+    pending: all.filter((c) => !c.email_send_status || c.email_send_status === 'pending' || c.email_send_status === 'not_ready').length,
+    failed: all.filter((c) => c.email_send_status === 'failed').length,
+    eligible: all.filter((c) => c.status === 'valid' && c.pdf_url && isValidEmail(c.recipient_email) && c.email_send_status !== 'sent').length,
+  };
+}
+
+function createOrgTransporter(org) {
+  const user = String(org?.mailer_email || '').trim();
+  const pass = String(org?.mailer_app_password || '').replace(/\s+/g, '');
+  if (!user || !pass) {
+    throw new Error('Configure the Gmail sender email and app password first');
+  }
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: { user, pass },
+  });
+}
+
+async function fetchPdfBuffer(url) {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Could not fetch certificate PDF (HTTP ${response.status})`);
+  }
+  return Buffer.from(await response.arrayBuffer());
+}
+
+async function sendCertificateEmail({ transporter, org, event, cert, req }) {
+  const fromAddress = String(org.mailer_email || '').trim();
+  const fromName = String(org.mailer_from_name || org.name || 'CertVault').trim();
+  const recipientEmail = String(cert.recipient_email || '').trim();
+  const verifyUrl = `${getBaseUrl(req)}/verify?id=${encodeURIComponent(cert.certificate_id)}`;
+  const pdfBuffer = await fetchPdfBuffer(cert.pdf_url);
+  const info = await transporter.sendMail({
+    from: `"${fromName}" <${fromAddress}>`,
+    to: recipientEmail,
+    subject: `${event.name} Certificate for ${cert.recipient_name}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; color: #111827; line-height: 1.6;">
+        <p>Hi ${cert.recipient_name},</p>
+        <p>Your certificate for <strong>${event.name}</strong> is attached to this email as a PDF.</p>
+        <p>Certificate ID: <strong>${cert.certificate_id}</strong></p>
+        <p>Verify online: <a href="${verifyUrl}">${verifyUrl}</a></p>
+        <p>Issued by ${org.name} via CertVault.</p>
+      </div>
+    `,
+    attachments: [
+      {
+        filename: `${cert.certificate_id}.pdf`,
+        content: pdfBuffer,
+        contentType: 'application/pdf',
+      },
+    ],
+  });
+  return info;
+}
+
 export default async function handler(req, res) {
   // CORS: Restrict to allowed origins only (no wildcard)
   const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',').map(o => o.trim()).filter(Boolean) || [];
@@ -349,7 +506,7 @@ export default async function handler(req, res) {
 
       return res.status(200).json({
         success: true,
-        organization: docToApi(org),
+        organization: serializeOrganization(org),
       });
     }
 
@@ -379,7 +536,7 @@ export default async function handler(req, res) {
       if (existing) {
         return res.status(200).json({
           success: true,
-          organization: docToApi(existing),
+          organization: serializeOrganization(existing),
         });
       }
 
@@ -395,7 +552,159 @@ export default async function handler(req, res) {
       }
       return res.status(200).json({
         success: true,
-        organization: docToApi(org),
+        organization: serializeOrganization(org),
+      });
+    }
+
+    if (action === 'mailer-config') {
+      const club = await getClubFromRequest(req, convex);
+      if (!club || club._supabaseEmail) {
+        return res.status(401).json({ success: false, error: 'Authentication required' });
+      }
+      const org = await convex.query(api.organizations.getById, { id: club.organizationId });
+      if (!org) {
+        return res.status(404).json({ success: false, error: 'Organization not found' });
+      }
+
+      if (req.method === 'GET') {
+        return res.status(200).json({
+          success: true,
+          config: {
+            mailer_email: org.mailer_email || '',
+            mailer_from_name: org.mailer_from_name || '',
+            has_mailer_app_password: Boolean(org.mailer_app_password),
+          },
+        });
+      }
+
+      if (req.method !== 'POST') {
+        return res.status(405).json({ success: false, error: 'Method not allowed' });
+      }
+
+      const mailerEmail = String(req.body?.mailer_email || '').trim().toLowerCase();
+      const mailerFromName = String(req.body?.mailer_from_name || '').trim();
+      const appPasswordInput = req.body?.mailer_app_password;
+      const patch = {
+        id: club.organizationId,
+        mailer_email: mailerEmail || undefined,
+        mailer_from_name: mailerFromName || undefined,
+      };
+      if (appPasswordInput !== undefined) {
+        const normalizedPassword = String(appPasswordInput || '').replace(/\s+/g, '');
+        patch.mailer_app_password = normalizedPassword || undefined;
+      }
+
+      if (mailerEmail && !isValidEmail(mailerEmail)) {
+        return res.status(400).json({ success: false, error: 'Enter a valid Gmail address' });
+      }
+
+      const updated = await convex.mutation(api.organizations.updateMailerConfig, patch);
+      return res.status(200).json({
+        success: true,
+        config: {
+          mailer_email: updated?.mailer_email || '',
+          mailer_from_name: updated?.mailer_from_name || '',
+          has_mailer_app_password: Boolean(updated?.mailer_app_password),
+        },
+      });
+    }
+
+    if (action === 'template-config') {
+      const club = await getClubFromRequest(req, convex);
+      if (!club || club._supabaseEmail) {
+        return res.status(401).json({ success: false, error: 'Authentication required' });
+      }
+      const eventId = req.query?.eventId || req.body?.eventId;
+      if (!eventId) {
+        return res.status(400).json({ success: false, error: 'eventId is required' });
+      }
+
+      const event = await convex.query(api.events.getByIdAndOrg, { id: eventId, organization_id: club.organizationId });
+      if (!event) {
+        return res.status(404).json({ success: false, error: 'Event not found' });
+      }
+
+      if (req.method === 'GET') {
+        return res.status(200).json({
+          success: true,
+          config: {
+            participant_csv: event.participant_csv || '',
+            template_asset_url: event.template_asset_url || '',
+            template_settings: normalizeTemplateSettings(event.template_settings || {}, req),
+          },
+        });
+      }
+
+      if (req.method !== 'POST') {
+        return res.status(405).json({ success: false, error: 'Method not allowed' });
+      }
+
+      const org = await convex.query(api.organizations.getById, { id: club.organizationId });
+      if (!org) {
+        return res.status(404).json({ success: false, error: 'Organization not found' });
+      }
+
+      let templateAssetUrl;
+      let templateAssetPublicId;
+      if (req.body?.template_data_url) {
+        if (!isCloudinaryConfigured()) {
+          return res.status(503).json({ success: false, error: 'Cloudinary is required to save certificate templates' });
+        }
+        const uploaded = await uploadTemplateImage(
+          req.body.template_data_url,
+          org.slug || 'default',
+          buildEventSlug(event.name)
+        );
+        templateAssetUrl = uploaded.secure_url;
+        templateAssetPublicId = uploaded.public_id;
+      }
+
+      const mutationArgs = {
+        id: eventId,
+        organization_id: club.organizationId,
+      };
+      if (templateAssetUrl !== undefined) {
+        mutationArgs.template_asset_url = templateAssetUrl;
+      }
+      if (templateAssetPublicId !== undefined) {
+        mutationArgs.template_asset_public_id = templateAssetPublicId;
+      }
+      if (req.body?.template_settings !== undefined) {
+        mutationArgs.template_settings = normalizeTemplateSettings(req.body.template_settings || {}, req);
+      }
+      if (req.body?.participant_csv !== undefined) {
+        mutationArgs.participant_csv = String(req.body.participant_csv || '');
+      }
+
+      const updated = await convex.mutation(api.events.updateTemplateConfig, mutationArgs);
+
+      return res.status(200).json({
+        success: true,
+        config: {
+          participant_csv: updated?.participant_csv || '',
+          template_asset_url: updated?.template_asset_url || '',
+          template_settings: normalizeTemplateSettings(updated?.template_settings || {}, req),
+        },
+      });
+    }
+
+    if (action === 'send-status') {
+      const club = await getClubFromRequest(req, convex);
+      if (!club || club._supabaseEmail) {
+        return res.status(401).json({ success: false, error: 'Authentication required' });
+      }
+      const eventId = req.query?.eventId || req.body?.eventId;
+      if (!eventId) {
+        return res.status(400).json({ success: false, error: 'eventId is required' });
+      }
+      const event = await convex.query(api.events.getByIdAndOrg, { id: eventId, organization_id: club.organizationId });
+      if (!event) {
+        return res.status(404).json({ success: false, error: 'Event not found' });
+      }
+      const certificates = await convex.query(api.certificates.listByEvent, { event_id: eventId });
+      return res.status(200).json({
+        success: true,
+        summary: buildSendSummary(certificates),
       });
     }
 
@@ -430,6 +739,7 @@ export default async function handler(req, res) {
         name: name.trim(),
         event_date: event_date || undefined,
         download_slug: slug || undefined,
+        participant_csv: '',
       });
 
       if (!event) {
@@ -453,7 +763,11 @@ export default async function handler(req, res) {
       const eventsWithCounts = await Promise.all(
         events.map(async (event) => {
           const count = await convex.query(api.certificates.countByEvent, { event_id: event._id });
-          return { ...docToApi(event), certificate_count: count };
+          return {
+            ...docToApi(event),
+            certificate_count: count,
+            has_template: Boolean(event.template_asset_url),
+          };
         })
       );
 
@@ -544,16 +858,7 @@ export default async function handler(req, res) {
       return res.status(200).json({
         success: true,
         event: { id: event._id, name: event.name },
-        certificates: docsToApi(certificates).map((c) => ({
-          id: c.id,
-          certificate_id: c.certificate_id,
-          recipient_name: c.recipient_name,
-          recipient_email: c.recipient_email,
-          category: c.category,
-          date_issued: c.date_issued,
-          status: c.status,
-          pdf_url: c.pdf_url,
-        })),
+        certificates: (certificates || []).map(serializeCertificate),
       });
     }
 
@@ -571,7 +876,7 @@ export default async function handler(req, res) {
         return res.status(403).json({ success: false, needSignup: true, email: club._supabaseEmail });
       }
 
-      const { eventId, recipients, template, settings, generatePdf } = req.body || {};
+      const { eventId, recipients, template, settings } = req.body || {};
       
       if (!eventId || !recipients || !Array.isArray(recipients) || recipients.length === 0) {
         return res.status(400).json({ 
@@ -587,125 +892,115 @@ export default async function handler(req, res) {
         return res.status(404).json({ success: false, error: 'Event not found' });
       }
 
+      const normalizedRecipients = recipients.map((recipient, index) => ({
+        row: index + 1,
+        name: String(recipient?.name || '').trim(),
+        email: String(recipient?.email || '').trim().toLowerCase(),
+        category: String(recipient?.category || 'Participant').trim() || 'Participant',
+      }));
+
+      const invalidRows = normalizedRecipients
+        .filter((recipient) => !recipient.name || !recipient.email || !isValidEmail(recipient.email))
+        .map((recipient) => ({
+          row: recipient.row,
+          error: !recipient.name
+            ? 'Name is required'
+            : !recipient.email
+              ? 'Email is required'
+              : 'Email format is invalid',
+        }));
+
+      if (invalidRows.length > 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'Fix invalid participant rows before generating certificates',
+          errors: invalidRows,
+        });
+      }
+
       // Get organization info for Cloudinary folder
       const org = await convex.query(api.organizations.getById, { id: club.organizationId });
+      if (!org) {
+        return res.status(404).json({ success: false, error: 'Organization not found' });
+      }
 
       const cloudinaryFolder = `certvault/${org?.slug || 'default'}/${event.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+      const resolvedTemplate = await resolveTemplateSource(template, event);
+      const resolvedSettings = normalizeTemplateSettings(settings || event.template_settings || {}, req);
 
       // Generate certificates for each recipient
       const results = [];
       const errors = [];
 
-      // If template provided and generatePdf is true, use batch PDF generation
-      if (template && generatePdf) {
-        if (!isPdfGenerationAvailable()) {
-          return res.status(503).json({
-            success: false,
-            error: 'PDF generation is not configured. Set CERTGEN_SERVICE_URL to your PDF generator service, or uncheck "Generate PDFs" to create certificate records only.',
-          });
-        }
-        try {
-          // Prepare recipients with certificate IDs
-          const recipientsWithIds = recipients.map(r => ({
-            name: r.name?.trim(),
-            certificate_id: generateCertificateId(),
-            email: r.email,
-            category: r.category || 'Participant',
-          })).filter(r => r.name);
-
-          // Process in chunks of 50 to avoid timeouts
-          const CHUNK_SIZE = 20;
-          const pdfUrlMap = new Map();
-          const publicIdMap = new Map();
-          let totalPdfsGenerated = 0;
-
-          for (let i = 0; i < recipientsWithIds.length; i += CHUNK_SIZE) {
-            const chunk = recipientsWithIds.slice(i, i + CHUNK_SIZE);
-            console.log(`[CertVault] Processing chunk ${Math.floor(i / CHUNK_SIZE) + 1}/${Math.ceil(recipientsWithIds.length / CHUNK_SIZE)} (${chunk.length} certificates)`);
-
-            const pdfResult = await generateCertificateBatch(
-              template,
-              chunk.map(r => ({ name: r.name, certificate_id: r.certificate_id })),
-              settings,
-              cloudinaryFolder
-            );
-
-            (pdfResult.results || []).forEach(r => {
-              if (r.pdf_url) pdfUrlMap.set(r.certificate_id, r.pdf_url);
-              if (r.public_id) publicIdMap.set(r.certificate_id, r.public_id);
-            });
-            totalPdfsGenerated += (pdfResult.generated || 0);
-          }
-
-          // Insert certificates into database with PDF URLs and cloudinary_public_id
-          for (const recipient of recipientsWithIds) {
-            const pdfUrl = pdfUrlMap.get(recipient.certificate_id);
-            const cloudinaryPublicId = publicIdMap.get(recipient.certificate_id) || null;
-
-            const cert = await convex.mutation(api.certificates.insert, {
-              certificate_id: recipient.certificate_id,
-              event_id: eventId,
-              organization_id: club.organizationId,
-              recipient_name: recipient.name,
-              recipient_email: recipient.email ? recipient.email.trim().toLowerCase() : undefined,
-              category: recipient.category,
-              status: 'valid',
-              pdf_url: pdfUrl || undefined,
-              cloudinary_public_id: cloudinaryPublicId,
-            });
-
-            if (cert) {
-              results.push(docToApi(cert));
-            } else {
-              errors.push({ recipient, error: 'Insert failed' });
-            }
-          }
-
-          return res.status(200).json({
-            success: true,
-            generated: results.length,
-            failed: errors.length,
-            certificates: results,
-            errors: errors.length > 0 ? errors : undefined,
-            pdfsGenerated: totalPdfsGenerated,
-          });
-
-        } catch (pdfError) {
-          console.error('[CertVault] PDF batch error:', pdfError);
-          // Fall through to generate without PDFs
-          return res.status(500).json({
-            success: false,
-            error: `PDF generation failed: ${pdfError.message}. Try without PDF generation.`
-          });
-        }
+      if (!resolvedTemplate) {
+        return res.status(400).json({
+          success: false,
+          error: 'A certificate template is required before generating certificates',
+        });
       }
 
-      // Standard generation without PDFs
-      for (const recipient of recipients) {
-        const { name, email, category } = recipient;
-        
-        if (!name) {
-          errors.push({ recipient, error: 'Name is required' });
-          continue;
-        }
-
-        const certificateId = generateCertificateId();
-
-        const cert = await convex.mutation(api.certificates.insert, {
-          certificate_id: certificateId,
-          event_id: eventId,
-          organization_id: club.organizationId,
-          recipient_name: name.trim(),
-          recipient_email: email ? email.trim().toLowerCase() : undefined,
-          category: category || 'Participant',
-          status: 'valid',
+      if (!isPdfGenerationAvailable()) {
+        return res.status(503).json({
+          success: false,
+          error: 'PDF generation is not configured. Set CERTGEN_SERVICE_URL to your PDF generator service.',
         });
+      }
 
-        if (cert) {
-          results.push(docToApi(cert));
-        } else {
-          errors.push({ recipient, error: 'Insert failed' });
+      try {
+        const recipientsWithIds = normalizedRecipients.map((recipient) => ({
+          ...recipient,
+          certificate_id: generateCertificateId(),
+        }));
+
+        const CHUNK_SIZE = 20;
+        const pdfUrlMap = new Map();
+        const publicIdMap = new Map();
+        let totalPdfsGenerated = 0;
+
+        for (let i = 0; i < recipientsWithIds.length; i += CHUNK_SIZE) {
+          const chunk = recipientsWithIds.slice(i, i + CHUNK_SIZE);
+          const pdfResult = await generateCertificateBatch(
+            resolvedTemplate,
+            chunk.map((recipient) => ({ name: recipient.name, certificate_id: recipient.certificate_id })),
+            resolvedSettings,
+            cloudinaryFolder
+          );
+
+          (pdfResult.results || []).forEach((result) => {
+            if (result.pdf_url) pdfUrlMap.set(result.certificate_id, result.pdf_url);
+            if (result.public_id) publicIdMap.set(result.certificate_id, result.public_id);
+          });
+          totalPdfsGenerated += pdfResult.generated || 0;
         }
+
+        for (const recipient of recipientsWithIds) {
+          const pdfUrl = pdfUrlMap.get(recipient.certificate_id);
+          const cert = await convex.mutation(api.certificates.insert, {
+            certificate_id: recipient.certificate_id,
+            event_id: eventId,
+            organization_id: club.organizationId,
+            recipient_name: recipient.name,
+            recipient_email: recipient.email,
+            category: recipient.category,
+            status: 'valid',
+            date_issued: new Date().toISOString(),
+            pdf_url: pdfUrl || undefined,
+            cloudinary_public_id: publicIdMap.get(recipient.certificate_id) || undefined,
+            email_send_status: pdfUrl ? 'pending' : 'not_ready',
+          });
+
+          if (cert) {
+            results.push(serializeCertificate(cert));
+          } else {
+            errors.push({ row: recipient.row, error: 'Insert failed' });
+          }
+        }
+      } catch (pdfError) {
+        console.error('[CertVault] PDF batch error:', pdfError);
+        return res.status(500).json({
+          success: false,
+          error: `PDF generation failed: ${pdfError.message}`,
+        });
       }
 
       return res.status(200).json({
@@ -714,6 +1009,7 @@ export default async function handler(req, res) {
         failed: errors.length,
         certificates: results,
         errors: errors.length > 0 ? errors : undefined,
+        pdfsGenerated: results.filter((cert) => cert.pdf_url).length,
       });
     }
 
@@ -869,6 +1165,83 @@ export default async function handler(req, res) {
       });
     }
 
+    if (action === 'send-certificates') {
+      if (req.method !== 'POST') {
+        return res.status(405).json({ success: false, error: 'Method not allowed' });
+      }
+      const club = await getClubFromRequest(req, convex);
+      if (!club) {
+        return res.status(401).json({ success: false, error: 'Authentication required' });
+      }
+      if (club._supabaseEmail) {
+        return res.status(403).json({ success: false, needSignup: true, email: club._supabaseEmail });
+      }
+
+      const { eventId } = req.body || {};
+      if (!eventId) {
+        return res.status(400).json({ success: false, error: 'eventId is required' });
+      }
+
+      const [event, org, certificates] = await Promise.all([
+        convex.query(api.events.getByIdAndOrg, { id: eventId, organization_id: club.organizationId }),
+        convex.query(api.organizations.getById, { id: club.organizationId }),
+        convex.query(api.certificates.listByEvent, { event_id: eventId }),
+      ]);
+
+      if (!event) {
+        return res.status(404).json({ success: false, error: 'Event not found' });
+      }
+      if (!org) {
+        return res.status(404).json({ success: false, error: 'Organization not found' });
+      }
+
+      let transporter;
+      try {
+        transporter = createOrgTransporter(org);
+      } catch (error) {
+        return res.status(400).json({ success: false, error: error.message });
+      }
+
+      const eligible = (certificates || []).filter((cert) =>
+        cert.status === 'valid' &&
+        cert.pdf_url &&
+        isValidEmail(cert.recipient_email) &&
+        cert.email_send_status !== 'sent'
+      );
+
+      const sent = [];
+      const failed = [];
+
+      for (const cert of eligible) {
+        try {
+          const info = await sendCertificateEmail({ transporter, org, event, cert, req });
+          await convex.mutation(api.certificates.updateEmailDelivery, {
+            certificate_id: cert.certificate_id,
+            email_send_status: 'sent',
+            email_sent_at: new Date().toISOString(),
+            email_message_id: info.messageId,
+            email_last_error: undefined,
+          });
+          sent.push({ certificate_id: cert.certificate_id, email: cert.recipient_email, messageId: info.messageId });
+        } catch (error) {
+          await convex.mutation(api.certificates.updateEmailDelivery, {
+            certificate_id: cert.certificate_id,
+            email_send_status: 'failed',
+            email_last_error: error.message,
+          });
+          failed.push({ certificate_id: cert.certificate_id, email: cert.recipient_email, error: error.message });
+        }
+      }
+
+      return res.status(200).json({
+        success: true,
+        attempted: eligible.length,
+        sent: sent.length,
+        failed: failed.length,
+        results: { sent, failed },
+      });
+    }
+
     // PUBLIC: Proxy PDF (bypasses Cloudinary free-tier 401 on direct URLs)
     if (action === 'proxy-pdf') {
       const rawUrl = req.query?.url;
@@ -992,15 +1365,7 @@ export default async function handler(req, res) {
       return res.status(200).json({
         success: true,
         event: { id: event._id, name: event.name },
-        matched: matched.map((c) => ({
-          id: c._id,
-          certificate_id: c.certificate_id,
-          recipient_name: c.recipient_name,
-          recipient_email: c.recipient_email,
-          category: c.category,
-          status: c.status,
-          pdf_url: c.pdf_url,
-        })),
+        matched: matched.map(serializeCertificate),
         notFound,
       });
     }
@@ -1196,21 +1561,13 @@ export default async function handler(req, res) {
       return res.status(200).json({
         success: true,
         event: { id: event._id, name: event.name },
-        matched: matched.map((c) => ({
-          id: c._id,
-          certificate_id: c.certificate_id,
-          recipient_name: c.recipient_name,
-          recipient_email: c.recipient_email,
-          category: c.category,
-          status: c.status,
-          pdf_url: c.pdf_url,
-        })),
+        matched: matched.map(serializeCertificate),
         notFound,
       });
     }
 
     return res.status(400).json({
-      error: 'Invalid action. Available actions: signup, login, me, create-event, list-events, delete-event, set-download-slug, list-certificates, generate, generate-missing-pdfs, regenerate-all-pdfs, verify, proxy-pdf, upload, revoke, delete, match-certificates, public-download'
+      error: 'Invalid action. Available actions: signup, login, me, ensure-org, mailer-config, template-config, send-status, create-event, list-events, delete-event, set-download-slug, list-certificates, generate, generate-missing-pdfs, regenerate-all-pdfs, send-certificates, verify, proxy-pdf, upload, revoke, delete, match-certificates, public-download'
     });
 
   } catch (err) {

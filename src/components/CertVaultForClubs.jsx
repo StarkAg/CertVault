@@ -111,7 +111,7 @@ export default function CertVaultForClubs() {
               </div>
             </div>
           </div>
-        </div>
+      </div>
       </main>
     </CertVaultLayout>
   );

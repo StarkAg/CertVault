@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Pricing | VENTARC</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;300;400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "error": "#ffb4ab",
+              "tertiary-fixed": "#5f5e5e",
+              "surface-tint": "#ffffff",
+              "inverse-surface": "#ffffff",
+              "surface-container-low": "#0a0a0a",
+              "on-background": "#ffffff",
+              "surface": "#000000",
+              "tertiary-container": "#262626",
+              "on-secondary-fixed": "#000000",
+              "on-error-container": "#ffdad6",
+              "on-primary": "#000000",
+              "background": "#000000",
+              "inverse-on-surface": "#000000",
+              "on-tertiary-container": "#ffffff",
+              "on-secondary-fixed-variant": "#a3a3a3",
+              "secondary-fixed": "#262626",
+              "on-surface-variant": "#a3a3a3",
+              "on-secondary-container": "#ffffff",
+              "secondary-fixed-dim": "#171717",
+              "primary": "#ffffff",
+              "on-surface": "#ffffff",
+              "inverse-primary": "#404040",
+              "secondary": "#a3a3a3",
+              "surface-bright": "#171717",
+              "primary-fixed-dim": "#262626",
+              "on-error": "#690005",
+              "surface-container-high": "#121212",
+              "surface-container-highest": "#1a1a1a",
+              "surface-dim": "#000000",
+              "on-primary-fixed": "#000000",
+              "secondary-container": "#171717",
+              "surface-variant": "#0f0f0f",
+              "on-secondary": "#000000",
+              "surface-container": "#080808",
+              "tertiary": "#a3a3a3",
+              "tertiary-fixed-dim": "#262626",
+              "primary-container": "#ffffff",
+              "primary-fixed": "#ffffff",
+              "on-tertiary-fixed": "#000000",
+              "outline-variant": "#262626"
+            },
+            fontFamily: {
+              "headline": ["Inter"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0px", "lg": "0px", "xl": "0px", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+      body {
+        background-color: #000000;
+        color: #ffffff;
+        font-family: 'Inter', sans-serif;
+      }
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+      }
+      .glass-card {
+        background: rgba(10, 10, 10, 0.8);
+        backdrop-filter: blur(40px);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+      }
+      .liquid-silver-text {
+        background: linear-gradient(180deg, #ffffff 0%, #a3a3a3 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+      .obsidian-border {
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      .obsidian-glow {
+        box-shadow: 0 0 40px -10px rgba(255, 255, 255, 0.1);
+      }
+    </style>
+</head>
+<body class="bg-background text-on-background selection:bg-primary selection:text-on-primary">
+<!-- Top Navigation Bar -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-8 h-20 bg-black/80 backdrop-blur-md border-b border-white/5">
+<div class="text-2xl font-black tracking-tighter text-white uppercase">VENTARC</div>
+<nav class="hidden md:flex items-center space-x-8 font-['Inter'] font-medium tracking-tight text-xs uppercase">
+<a class="text-neutral-500 hover:text-white transition-colors duration-300" href="#">Features</a>
+<a class="text-neutral-500 hover:text-white transition-colors duration-300" href="#">Solutions</a>
+<a class="text-white border-b border-white pb-1" href="#">Pricing</a>
+<a class="text-neutral-500 hover:text-white transition-colors duration-300" href="#">Resources</a>
+</nav>
+<div class="flex items-center space-x-6 font-['Inter'] font-bold tracking-widest text-[10px] uppercase">
+<button class="text-neutral-400 hover:text-white transition-all">Login</button>
+<button class="bg-white text-black px-6 py-2.5 hover:bg-neutral-200 transition-colors">Create Event</button>
+</div>
+</header>
+<main class="pt-40 pb-24 px-8">
+<!-- Hero Section -->
+<section class="max-w-7xl mx-auto mb-32 flex flex-col items-start lg:grid lg:grid-cols-2 gap-12">
+<div>
+<span class="text-[10px] uppercase tracking-[0.4em] text-neutral-500 mb-6 block font-bold">Scalable Infrastructure</span>
+<h1 class="text-7xl md:text-9xl font-black tracking-tighter liquid-silver-text leading-[0.85] mb-10">THE PRICE OF PRECISION.</h1>
+<p class="text-neutral-400 max-w-md leading-relaxed text-sm font-medium">
+                    Architecture for the ambitious. Our pricing scales with your vision, ensuring the Kinetic Monolith supports every facet of your event ecosystem.
+                </p>
+</div>
+<div class="flex flex-col justify-end items-start lg:items-end space-y-6">
+<div class="w-full h-px bg-white/10"></div>
+<div class="flex items-center space-x-16">
+<div>
+<div class="text-3xl font-black text-white">99.9%</div>
+<div class="text-[9px] uppercase tracking-[0.3em] text-neutral-500 mt-1">Uptime SLA</div>
+</div>
+<div>
+<div class="text-3xl font-black text-white">24/7</div>
+<div class="text-[9px] uppercase tracking-[0.3em] text-neutral-500 mt-1">Architect Support</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Pricing Tiers (Asymmetric Bento) -->
+<section class="max-w-7xl mx-auto">
+<div class="grid grid-cols-1 md:grid-cols-12 gap-1">
+<!-- Starter Tier -->
+<div class="md:col-span-4 group relative overflow-hidden bg-neutral-900/30 p-10 obsidian-border">
+<div class="flex flex-col h-full">
+<div class="mb-16">
+<span class="text-[9px] uppercase tracking-[0.3em] text-neutral-500 mb-3 block">Foundational</span>
+<h3 class="text-3xl font-bold text-white mb-6">Starter</h3>
+<div class="flex items-baseline space-x-2">
+<span class="text-5xl font-black text-white">$0</span>
+<span class="text-[10px] text-neutral-500 uppercase tracking-widest">/ month</span>
+</div>
+</div>
+<div class="space-y-5 mb-20 flex-grow">
+<div class="flex items-center space-x-4">
+<span class="material-symbols-outlined text-sm text-white">check_circle</span>
+<span class="text-xs text-neutral-400 font-medium">Up to 500 Attendees</span>
+</div>
+<div class="flex items-center space-x-4">
+<span class="material-symbols-outlined text-sm text-white">check_circle</span>
+<span class="text-xs text-neutral-400 font-medium">Core Event Modules</span>
+</div>
+<div class="flex items-center space-x-4 opacity-20">
+<span class="material-symbols-outlined text-sm">cancel</span>
+<span class="text-xs font-medium">Advanced Analytics</span>
+</div>
+</div>
+<button class="w-full py-5 text-[10px] font-black uppercase tracking-[0.3em] border border-white/20 hover:bg-white hover:text-black transition-all duration-300">
+                            Initialize
+                        </button>
+</div>
+</div>
+<!-- Pro Tier (Featured) -->
+<div class="md:col-span-5 relative overflow-hidden bg-neutral-900/50 p-12 obsidian-border obsidian-glow ring-1 ring-white/10 z-10">
+<div class="absolute top-0 right-0 p-6">
+<span class="bg-white text-black text-[9px] font-black uppercase px-3 py-1.5 tracking-tighter">Most Deployed</span>
+</div>
+<div class="flex flex-col h-full">
+<div class="mb-16">
+<span class="text-[9px] uppercase tracking-[0.3em] text-white mb-3 block">Professional Grade</span>
+<h3 class="text-5xl font-black text-white mb-6">Pro</h3>
+<div class="flex items-baseline space-x-2">
+<span class="text-6xl font-black text-white">$149</span>
+<span class="text-[10px] text-neutral-400 uppercase tracking-widest">/ month</span>
+</div>
+</div>
+<div class="space-y-7 mb-20 flex-grow">
+<div class="flex items-center space-x-4">
+<span class="material-symbols-outlined text-lg text-white" style="font-variation-settings: 'FILL' 1;">stars</span>
+<span class="text-sm text-white font-bold">Unlimited Attendees</span>
+</div>
+<div class="flex items-center space-x-4">
+<span class="material-symbols-outlined text-base text-white">check_circle</span>
+<span class="text-xs text-neutral-300">Midnight Analytics Suite</span>
+</div>
+<div class="flex items-center space-x-4">
+<span class="material-symbols-outlined text-base text-white">check_circle</span>
+<span class="text-xs text-neutral-300">Custom Glass Interface</span>
+</div>
+<div class="flex items-center space-x-4">
+<span class="material-symbols-outlined text-base text-white">check_circle</span>
+<span class="text-xs text-neutral-300">Priority Architecture Support</span>
+</div>
+</div>
+<button class="w-full py-6 bg-white text-black text-[10px] font-black uppercase tracking-[0.4em] hover:bg-neutral-200 transition-all shadow-[0_0_30px_rgba(255,255,255,0.1)]">
+                            Scale Now
+                        </button>
+</div>
+</div>
+<!-- Enterprise Tier -->
+<div class="md:col-span-3 bg-neutral-900/20 p-10 obsidian-border">
+<div class="flex flex-col h-full">
+<div class="mb-16">
+<span class="text-[9px] uppercase tracking-[0.3em] text-neutral-500 mb-3 block">Global Scale</span>
+<h3 class="text-2xl font-bold text-white mb-6">Enterprise</h3>
+<div class="text-[10px] font-black text-white uppercase tracking-widest py-2 border-b border-white/10 w-fit">Custom Quotes</div>
+</div>
+<div class="space-y-6 mb-20 flex-grow">
+<p class="text-[11px] text-neutral-500 leading-relaxed font-medium">
+                                Bespoke infrastructure built for multi-national conglomerates and large-scale festivals.
+                            </p>
+<div class="pt-6 space-y-4">
+<div class="flex items-center space-x-4">
+<span class="material-symbols-outlined text-sm text-neutral-400">check_circle</span>
+<span class="text-[11px] text-neutral-400 font-medium">White-label Monolith</span>
+</div>
+<div class="flex items-center space-x-4">
+<span class="material-symbols-outlined text-sm text-neutral-400">check_circle</span>
+<span class="text-[11px] text-neutral-400 font-medium">On-premise Deployment</span>
+</div>
+</div>
+</div>
+<button class="w-full py-5 text-[10px] font-black uppercase tracking-[0.3em] bg-neutral-800 text-white hover:bg-neutral-700 transition-all">
+                            Consultation
+                        </button>
+</div>
+</div>
+</div>
+</section>
+<!-- Feature Comparison Table -->
+<section class="max-w-4xl mx-auto mt-40">
+<h2 class="text-[10px] font-black uppercase tracking-[0.5em] text-center mb-20 text-neutral-600">Technological Specifications</h2>
+<div class="border-y border-white/5 divide-y divide-white/5">
+<div class="grid grid-cols-2 py-8 px-6 hover:bg-white/[0.02] transition-colors">
+<div class="text-[10px] uppercase tracking-[0.3em] text-neutral-500 font-bold">API Access</div>
+<div class="text-xs text-right font-black text-white uppercase">REST &amp; GraphQL</div>
+</div>
+<div class="grid grid-cols-2 py-8 px-6 hover:bg-white/[0.02] transition-colors">
+<div class="text-[10px] uppercase tracking-[0.3em] text-neutral-500 font-bold">Data Encryption</div>
+<div class="text-xs text-right font-black text-white uppercase">AES-256 Quantum Resistant</div>
+</div>
+<div class="grid grid-cols-2 py-8 px-6 hover:bg-white/[0.02] transition-colors">
+<div class="text-[10px] uppercase tracking-[0.3em] text-neutral-500 font-bold">Real-time Sync</div>
+<div class="text-xs text-right font-black text-white uppercase">Sub-50ms Latency</div>
+</div>
+<div class="grid grid-cols-2 py-8 px-6 hover:bg-white/[0.02] transition-colors">
+<div class="text-[10px] uppercase tracking-[0.3em] text-neutral-500 font-bold">Custom Domains</div>
+<div class="text-xs text-right font-black text-white uppercase">Included (Pro/Ent)</div>
+</div>
+</div>
+</section>
+<!-- Call to Action -->
+<section class="max-w-7xl mx-auto mt-48">
+<div class="bg-black p-20 flex flex-col items-center text-center relative overflow-hidden obsidian-border obsidian-glow">
+<div class="absolute inset-0 opacity-[0.03] pointer-events-none scale-110">
+<img class="w-full h-full object-cover grayscale invert" data-alt="Dark abstract geometric architectural structure" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD9vKCDJvVKwcy_CI5O94A6WZFdQM-ocmKMTA2D4ptmdbUxlIbjJyAcLp2v_peHZzsmlWfuXmEBbmPs6sBh_7fI3JXG_VZ65BjWhCVeU2lz4uWr7rynADtszeSNXgR-AEgE7ABgd_uPLPszOndUEY1dM6bHq8qFzXJki9ZZbwhukTrbzuJYJyIR0lx2UGXhNWJB8SWO19nCV4hN48eioyFg-6wuHzhNNmatMSezOSR6VilEgTznlbkm2XW33Taow2NFLSiPGOIvMgY"/>
+</div>
+<div class="relative z-10">
+<h2 class="text-5xl md:text-7xl font-black tracking-tighter text-white mb-8">READY TO DEPLOY?</h2>
+<p class="text-neutral-500 mb-14 max-w-lg mx-auto text-sm font-medium tracking-tight">Begin your journey with the industry's most authoritative event management system.</p>
+<div class="flex flex-col sm:flex-row space-y-6 sm:space-y-0 sm:space-x-6 justify-center">
+<button class="px-16 py-5 bg-white text-black font-black uppercase text-[10px] tracking-[0.4em] hover:bg-neutral-200 transition-all">Start for Free</button>
+<button class="px-16 py-5 border border-white/20 text-white font-black uppercase text-[10px] tracking-[0.4em] hover:bg-white hover:text-black transition-all">Talk to Sales</button>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="w-full py-16 px-8 flex flex-col md:flex-row justify-between items-center bg-black border-t border-white/5">
+<div class="flex flex-col md:items-start items-center mb-10 md:mb-0">
+<div class="text-xl font-black text-white mb-3 uppercase tracking-tighter">VENTARC</div>
+<div class="font-['Inter'] font-bold text-[9px] tracking-[0.4em] uppercase text-neutral-700">© 2024 VENTARC. THE KINETIC MONOLITH.</div>
+</div>
+<div class="flex space-x-12 font-['Inter'] font-bold text-[9px] tracking-[0.3em] uppercase">
+<a class="text-neutral-600 hover:text-white transition-all" href="#">Product</a>
+<a class="text-neutral-600 hover:text-white transition-all" href="#">Company</a>
+<a class="text-neutral-600 hover:text-white transition-all" href="#">Connect</a>
+<a class="text-neutral-600 hover:text-white transition-all" href="#">Privacy</a>
+<a class="text-neutral-600 hover:text-white transition-all" href="#">Terms</a>
+</div>
+</footer>
+</body></html>

@@ -7,3 +7,13 @@ dist/
 .certifier-cookies.txt
 *.log
 .DS_Store
+
+# Python / certgen local artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+certgen-service/venv/
+certgen-service/output/
+
+# Local diagnostics and generated test data
+.tmp/

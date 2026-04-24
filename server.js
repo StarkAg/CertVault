@@ -2,13 +2,16 @@
  * CertVault backend — Express server.
  * Serves the frontend and /api/certvault.
  */
-import 'dotenv/config';
+import dotenv from 'dotenv';
 import http from 'http';
 import express from 'express';
 import cors from 'cors';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import fs from 'fs';
+
+dotenv.config();
+dotenv.config({ path: '.env.local', override: true });
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -57,27 +60,48 @@ async function handleVercelRoute(handler, req, res) {
   const vercelRes = {
     statusCode: 200,
     headers: {},
+    headersSent: false,
     setHeader(name, value) {
       this.headers[name] = value;
-      res.setHeader(name, value);
+      if (!res.headersSent) {
+        res.setHeader(name, value);
+      }
     },
     status(code) {
       this.statusCode = code;
       return this;
     },
     json(data) {
-      this.setHeader('Content-Type', 'application/json');
-      Object.keys(this.headers).forEach(k => res.setHeader(k, this.headers[k]));
+      this.headersSent = true;
+      if (!res.headersSent) {
+        this.setHeader('Content-Type', 'application/json');
+        Object.keys(this.headers).forEach(k => res.setHeader(k, this.headers[k]));
+      }
       res.status(this.statusCode).json(data);
     },
     send(data) {
-      Object.keys(this.headers).forEach(k => res.setHeader(k, this.headers[k]));
+      this.headersSent = true;
+      if (!res.headersSent) {
+        Object.keys(this.headers).forEach(k => res.setHeader(k, this.headers[k]));
+      }
       res.status(this.statusCode).send(data);
     },
+    write(data) {
+      this.headersSent = true;
+      if (!res.headersSent) {
+        Object.keys(this.headers).forEach(k => res.setHeader(k, this.headers[k]));
+      }
+      res.statusCode = this.statusCode;
+      return res.write(data);
+    },
     end(data) {
-      Object.keys(this.headers).forEach(k => res.setHeader(k, this.headers[k]));
-      if (data) res.status(this.statusCode).send(data);
-      else res.status(this.statusCode).end();
+      this.headersSent = true;
+      if (!res.headersSent) {
+        Object.keys(this.headers).forEach(k => res.setHeader(k, this.headers[k]));
+      }
+      res.statusCode = this.statusCode;
+      if (data !== undefined) return res.end(data);
+      return res.end();
     },
   };
   try {

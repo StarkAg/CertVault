@@ -14,6 +14,28 @@ export default defineSchema({
     .index("by_email", ["email"])
     .index("by_slug", ["slug"]),
 
+  organization_passkeys: defineTable({
+    organization_id: v.id("organizations"),
+    credential_id: v.string(),
+    public_key: v.string(),
+    counter: v.number(),
+    transports: v.optional(v.array(v.string())),
+    device_type: v.optional(v.string()),
+    backed_up: v.optional(v.boolean()),
+  })
+    .index("by_organization", ["organization_id"])
+    .index("by_credential_id", ["credential_id"]),
+
+  webauthn_challenges: defineTable({
+    challenge: v.string(),
+    type: v.string(),
+    organization_id: v.optional(v.id("organizations")),
+    expires_at: v.number(),
+    used_at: v.optional(v.number()),
+  })
+    .index("by_challenge", ["challenge"])
+    .index("by_organization", ["organization_id"]),
+
   events: defineTable({
     organization_id: v.id("organizations"),
     name: v.string(),

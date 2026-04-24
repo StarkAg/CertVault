@@ -1,14 +1,14 @@
 /**
  * CertVault Public Download — students enter names to download their certificates.
- * Route: /certvault/:eventSlug (e.g. /certvault/hize)
+ * Route: /:eventSlug (e.g. /ideatron)
  * No login required.
  */
 import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
-import CertVaultLayout from './CertVaultLayout';
+import { Link, useParams } from 'react-router-dom';
 import JSZip from 'jszip';
 import { pdfDownloadUrl } from '../utils/certvaultPdfUrl';
-import { certVaultTheme as theme } from '../theme';
+import VentarcHeader from './VentarcHeader';
+import VentarcSceneBackground from './VentarcSceneBackground';
 
 const API_PUBLIC_DOWNLOAD = '/api/certvault?action=public-download';
 
@@ -23,7 +23,7 @@ export default function CertVaultDownload() {
   async function handleSubmit(e) {
     e.preventDefault();
     if (!eventSlug || !namesText.trim()) return;
-    const names = namesText.trim().split(/\n/).map(n => n.trim()).filter(Boolean);
+    const names = namesText.trim().split(/\n/).map((name) => name.trim()).filter(Boolean);
     if (names.length === 0) return;
 
     setLoading(true);
@@ -50,11 +50,12 @@ export default function CertVaultDownload() {
 
   async function handleDownloadAllZip() {
     if (!result?.matched?.length) return;
-    const withPdf = result.matched.filter(c => c.pdf_url);
+    const withPdf = result.matched.filter((cert) => cert.pdf_url);
     if (withPdf.length === 0) {
       alert('No PDFs available for download');
       return;
     }
+
     setZipLoading(true);
     try {
       const zip = new JSZip();
@@ -66,10 +67,10 @@ export default function CertVaultDownload() {
       }
       const blob = await zip.generateAsync({ type: 'blob' });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${result.event?.name || 'certificates'}.zip`;
-      a.click();
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `${result.event?.name || 'certificates'}.zip`;
+      anchor.click();
       URL.revokeObjectURL(url);
     } catch (err) {
       console.error(err);
@@ -79,307 +80,212 @@ export default function CertVaultDownload() {
     }
   }
 
-  const eventName = eventSlug ? eventSlug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : '';
-  const notFoundCount = result?.notFound?.length || 0;
+  const eventName = eventSlug
+    ? eventSlug.replace(/-/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase())
+    : '';
   const matchedCount = result?.matched?.length || 0;
-  const hasValidSlug = eventSlug && String(eventSlug).trim().length > 0;
-
-  if (!hasValidSlug) {
-    return (
-      <CertVaultLayout>
-        <div style={styles.wrap}>
-          <h1 style={styles.title}>Download Certificate</h1>
-          <div style={styles.invalidLinkCard}>
-            <p style={styles.invalidLinkText}>Invalid download link.</p>
-            <p style={styles.invalidLinkHint}>Please use the link shared by your organizer.</p>
-          </div>
-        </div>
-      </CertVaultLayout>
-    );
-  }
+  const notFoundCount = result?.notFound?.length || 0;
+  const hasValidSlug = Boolean(eventSlug && String(eventSlug).trim());
+  const searched = Boolean(result || error);
 
   return (
-    <CertVaultLayout>
-      <style>{`
-        @media (max-width: 768px) {
-          .certvault-download-wrap {
-            padding: 0 12px !important;
-          }
-          .certvault-download-title {
-            font-size: 20px !important;
-            white-space: normal !important;
-          }
-          .certvault-download-subtitle {
-            font-size: 12px !important;
-          }
-          .certvault-download-textarea {
-            font-size: 13px !important;
-            padding: 10px 12px !important;
-          }
-          .certvault-download-btn {
-            font-size: 13px !important;
-            padding: 10px 18px !important;
-            white-space: nowrap !important;
-          }
-          .certvault-download-row {
-            flex-direction: column !important;
-            align-items: flex-start !important;
-            gap: 10px !important;
-            padding: 10px 12px !important;
-          }
-          .certvault-download-name {
-            font-size: 13px !important;
-            white-space: normal !important;
-            word-break: break-word !important;
-          }
-          .certvault-download-actions {
-            width: 100% !important;
-            justify-content: flex-start !important;
-            flex-wrap: wrap !important;
-            gap: 6px !important;
-          }
-          .certvault-download-link,
-          .certvault-download-verify-link {
-            font-size: 11px !important;
-            padding: 5px 10px !important;
-            white-space: nowrap !important;
-          }
-          .certvault-download-summary {
-            font-size: 12px !important;
-            white-space: normal !important;
-          }
-          .certvault-download-zip-btn {
-            font-size: 12px !important;
-            padding: 8px 14px !important;
-            white-space: nowrap !important;
-          }
-        }
-      `}</style>
-      <div className="certvault-download-wrap" style={styles.wrap}>
-        <h1 className="certvault-download-title" style={styles.title}>
-          Download Certificate
-          {eventName && <span style={styles.eventName}> — {eventName}</span>}
-        </h1>
-        <p className="certvault-download-subtitle" style={styles.subtitle}>Enter your <strong>name or email ID</strong> (one per line) to find and download your certificate.</p>
+    <div className="relative min-h-screen overflow-hidden bg-[#05070b] text-white">
+      <VentarcHeader minimal />
+      <VentarcSceneBackground page="features" />
+      <div className="relative z-10 h-screen w-full overflow-hidden">
+        <main className="mx-auto flex h-full w-full max-w-[1400px] flex-col px-4 pb-6 pt-24 sm:px-6 lg:px-8">
+          {!hasValidSlug ? (
+            <div className="flex flex-1 items-center justify-center">
+              <div className="w-full max-w-2xl rounded-[28px] border border-red-500/20 bg-[linear-gradient(180deg,rgba(127,29,29,0.18)_0%,rgba(255,255,255,0.02)_100%),rgba(7,11,18,0.82)] p-8 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_40px_120px_-48px_rgba(0,0,0,0.8)] backdrop-blur-[18px]">
+                <div className="mx-auto mb-4 inline-flex size-14 items-center justify-center rounded-2xl bg-red-500/12 text-red-300">
+                  <span className="material-symbols-outlined text-[28px]">link_off</span>
+                </div>
+                <p className="text-lg font-semibold text-white">Invalid download link</p>
+                <p className="mt-2 text-sm text-[#bcc8da]">Please use the link shared by your organizer.</p>
+              </div>
+            </div>
+          ) : (
+            <div className="grid min-h-0 flex-1 gap-5 lg:grid-cols-[420px_minmax(0,1fr)]">
+              <section className="flex min-h-0 flex-col rounded-[28px] border border-white/[0.08] bg-[linear-gradient(180deg,rgba(255,255,255,0.05)_0%,rgba(255,255,255,0.02)_100%),rgba(7,11,18,0.82)] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_40px_120px_-48px_rgba(0,0,0,0.8)] backdrop-blur-[18px] md:p-6">
+                <div className="mb-5">
+                  <div className="mb-3 inline-flex rounded border border-[#8fb8ff]/20 bg-[#09111c]/80 px-4 py-2 text-[11px] uppercase tracking-[0.3em] text-[#8fb8ff]">
+                    Public Download
+                  </div>
+                  <h1
+                    className="text-3xl font-bold tracking-tight text-white"
+                    style={{ fontFamily: 'Space Grotesk, sans-serif' }}
+                  >
+                    Download Certificate
+                  </h1>
+                  {eventName ? (
+                    <p className="mt-2 text-base font-medium text-[#bcc8da]">for {eventName}</p>
+                  ) : null}
+                  <p className="mt-3 text-sm text-[#9fb0c7]">
+                    Enter your name or email, one per line, to find your certificate and open the verified PDF.
+                  </p>
+                </div>
 
-        <form onSubmit={handleSubmit} style={styles.form}>
-          <textarea
-            value={namesText}
-            onChange={(e) => setNamesText(e.target.value)}
-            placeholder="rahul@example.com&#10;Rahul Kumar Sharma&#10;priya@example.com"
-            className="certvault-download-textarea"
-            style={styles.textarea}
-            rows={4}
-            disabled={loading}
-          />
-          <button type="submit" className="certvault-download-btn" style={styles.btn} disabled={loading}>
-            {loading ? 'Searching…' : 'Find my certificate'}
-          </button>
-        </form>
+                <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+                  <div className="mb-4 flex items-center gap-3">
+                    <div className="inline-flex size-12 items-center justify-center rounded-2xl bg-[#8fb8ff]/10 text-[#8fb8ff]">
+                      <span className="material-symbols-outlined text-[24px]">folder_shared</span>
+                    </div>
+                    <div>
+                      <p className="text-base font-semibold text-white">Find your issued certificates</p>
+                      <p className="text-sm text-[#9fb0c7]">Paste one name or email per line.</p>
+                    </div>
+                  </div>
 
-        {error && (
-          <div style={styles.errorCard}>
-            <p style={styles.error}>{error}</p>
-            {error.includes('not found') && (
-              <p style={styles.errorHint}>The download link may be incorrect. Please check with the organizer.</p>
-            )}
-          </div>
-        )}
+                  <textarea
+                    value={namesText}
+                    onChange={(e) => setNamesText(e.target.value)}
+                    placeholder={'rahul@example.com\nRahul Kumar Sharma\npriya@example.com'}
+                    disabled={loading}
+                    className="min-h-[220px] flex-1 rounded-[20px] border border-white/[0.08] bg-[#09111c]/85 px-4 py-4 text-sm text-white outline-none placeholder:text-white/35 focus:border-[#8fb8ff]/45 md:text-base"
+                  />
 
-        {result && (
-          <div style={styles.resultCard}>
-            <p className="certvault-download-summary" style={styles.summary}>
-              Found {matchedCount} of {matchedCount + notFoundCount} name{matchedCount + notFoundCount !== 1 ? 's' : ''}.
-              {notFoundCount > 0 && (
-                <span style={styles.notFound}> {notFoundCount} not found.</span>
-              )}
-            </p>
+                  <div className="mt-4 space-y-3">
+                    <p className="text-xs uppercase tracking-[0.22em] text-[#7994b8]">
+                      Search by recipient name or email
+                    </p>
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full rounded-xl bg-[var(--apple-accent)] px-5 py-3 text-sm font-bold text-white shadow-lg shadow-blue-500/25 transition hover:opacity-90 disabled:opacity-60"
+                    >
+                      {loading ? 'Searching…' : 'Find my certificate'}
+                    </button>
+                  </div>
+                </form>
 
-            {matchedCount > 0 && (
-              <>
-                <button
-                  type="button"
-                  onClick={handleDownloadAllZip}
-                  className="certvault-download-zip-btn"
-                  style={styles.zipBtn}
-                  disabled={zipLoading}
-                >
-                  {zipLoading ? 'Creating ZIP…' : 'Download all as ZIP'}
-                </button>
-                <div style={styles.list}>
-                  {result.matched.map((c) => (
-                    <div key={c.certificate_id} className="certvault-download-row" style={styles.row}>
-                      <span className="certvault-download-name" style={styles.name}>{c.recipient_name}</span>
-                      <div className="certvault-download-actions" style={styles.actions}>
-                        {c.pdf_url ? (
-                          <a
-                            href={pdfDownloadUrl(c.pdf_url, true)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="certvault-download-link"
-                            style={styles.downloadLink}
-                            download
-                          >
-                            Download PDF
-                          </a>
-                        ) : (
-                          <span style={styles.noPdf}>No PDF available</span>
-                        )}
-                        <a
-                          href={`/verify?id=${encodeURIComponent(c.certificate_id)}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="certvault-download-verify-link"
-                          style={styles.verifyLink}
-                        >
-                          Verify
-                        </a>
+                {!searched ? (
+                  <p className="mt-5 flex items-center gap-2 text-sm text-[#9fb0c7]">
+                    <span className="material-symbols-outlined text-base">info</span>
+                    Need help? <Link to="/" className="font-medium text-[#8fb8ff] hover:underline">Contact our support team</Link>
+                  </p>
+                ) : null}
+              </section>
+
+              <section className="min-h-0 rounded-[28px] border border-white/[0.08] bg-[linear-gradient(180deg,rgba(255,255,255,0.05)_0%,rgba(255,255,255,0.02)_100%),rgba(7,11,18,0.82)] shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_40px_120px_-48px_rgba(0,0,0,0.8)] backdrop-blur-[18px]">
+                <div className="flex h-full min-h-[420px] flex-col p-5 md:p-6">
+                  {error ? (
+                    <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-100">
+                      <div className="flex items-start gap-2">
+                        <span className="material-symbols-outlined text-base">error</span>
+                        <div>
+                          <p>{error}</p>
+                          {error.includes('not found') ? (
+                            <p className="mt-1 text-red-100/80">The download link may be incorrect. Please check with the organizer.</p>
+                          ) : null}
+                        </div>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </>
-            )}
+                  ) : result ? (
+                    <>
+                      <div className="flex flex-col gap-4 border-b border-white/[0.08] pb-5 md:flex-row md:items-center md:justify-between">
+                        <div>
+                          <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-emerald-300">
+                            <span className="material-symbols-outlined text-sm">verified</span>
+                            Search Complete
+                          </div>
+                          <p className="mt-3 text-xl font-semibold text-white">
+                            Found {matchedCount} of {matchedCount + notFoundCount} entr{matchedCount + notFoundCount === 1 ? 'y' : 'ies'}
+                          </p>
+                          {notFoundCount > 0 ? (
+                            <p className="mt-1 text-sm text-[#f9a8a8]">{notFoundCount} could not be matched.</p>
+                          ) : (
+                            <p className="mt-1 text-sm text-[#9fb0c7]">All provided names or emails matched successfully.</p>
+                          )}
+                        </div>
 
-            {notFoundCount > 0 && (
-              <div style={styles.notFoundList}>
-                <span style={styles.notFoundLabel}>Not found:</span>{' '}
-                {result.notFound.join(', ')}
-              </div>
-            )}
-          </div>
-        )}
+                        {matchedCount > 0 ? (
+                          <button
+                            type="button"
+                            onClick={handleDownloadAllZip}
+                            disabled={zipLoading}
+                            className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#8fb8ff]/30 bg-[#8fb8ff]/10 px-4 py-3 text-sm font-semibold text-[#8fb8ff] transition hover:bg-[#8fb8ff]/15 disabled:opacity-60"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">folder_zip</span>
+                            {zipLoading ? 'Creating ZIP…' : 'Download all as ZIP'}
+                          </button>
+                        ) : null}
+                      </div>
+
+                      <div className="mt-5 min-h-0 flex-1 overflow-y-auto pr-1">
+                        {matchedCount > 0 ? (
+                          <div className="space-y-3">
+                            {result.matched.map((cert) => (
+                              <div
+                                key={cert.certificate_id}
+                                className="flex flex-col gap-4 rounded-2xl border border-white/[0.08] bg-[#09111c]/78 px-4 py-4 xl:flex-row xl:items-center xl:justify-between"
+                              >
+                                <div className="min-w-0">
+                                  <div className="truncate text-base font-semibold text-white">{cert.recipient_name}</div>
+                                  <div className="mt-1 break-all text-xs uppercase tracking-[0.18em] text-[#7994b8]">
+                                    {cert.certificate_id}
+                                  </div>
+                                </div>
+
+                                <div className="flex flex-wrap items-center gap-2">
+                                  {cert.pdf_url ? (
+                                    <a
+                                      href={pdfDownloadUrl(cert.pdf_url, true)}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      download
+                                      className="inline-flex items-center gap-2 rounded-xl bg-[var(--apple-accent)] px-4 py-2.5 text-sm font-bold text-white no-underline shadow-lg shadow-blue-500/20 transition hover:opacity-90"
+                                    >
+                                      <span className="material-symbols-outlined text-[18px]">download</span>
+                                      Download PDF
+                                    </a>
+                                  ) : (
+                                    <span className="rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-[#9fb0c7]">
+                                      No PDF available
+                                    </span>
+                                  )}
+                                  <a
+                                    href={`/certvault/verify?id=${encodeURIComponent(cert.certificate_id)}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-2 rounded-xl border border-white/[0.14] bg-white/[0.08] px-4 py-2.5 text-sm font-bold text-white no-underline transition hover:bg-white/[0.12]"
+                                  >
+                                    <span className="material-symbols-outlined text-[18px]">verified_user</span>
+                                    Verify
+                                  </a>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-white/[0.12] bg-[#09111c]/45 px-6 text-center text-sm text-[#9fb0c7]">
+                            No matching certificates were found for the submitted entries.
+                          </div>
+                        )}
+
+                        {notFoundCount > 0 ? (
+                          <div className="mt-5 rounded-2xl border border-white/[0.08] bg-white/[0.04] px-4 py-4 text-sm text-[#bcc8da]">
+                            <span className="font-semibold text-white">Not found:</span> {result.notFound.join(', ')}
+                          </div>
+                        ) : null}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex h-full flex-col items-center justify-center rounded-2xl border border-dashed border-white/[0.12] bg-[#09111c]/45 px-6 text-center">
+                      <div className="mb-4 inline-flex size-14 items-center justify-center rounded-2xl bg-[#8fb8ff]/10 text-[#8fb8ff]">
+                        <span className="material-symbols-outlined text-[28px]">travel_explore</span>
+                      </div>
+                      <p className="text-lg font-semibold text-white">Results will appear here</p>
+                      <p className="mt-2 max-w-md text-sm text-[#9fb0c7]">
+                        Search from the left panel and matched certificates will open in this view without leaving the page.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </section>
+            </div>
+          )}
+        </main>
       </div>
-    </CertVaultLayout>
+    </div>
   );
 }
-
-const styles = {
-  wrap: {
-    maxWidth: 560,
-    margin: '0 auto',
-    padding: '0 24px',
-    boxSizing: 'border-box',
-  },
-  title: {
-    fontFamily: "'Space Grotesk', Inter, sans-serif",
-    fontSize: 26,
-    fontWeight: 600,
-    color: theme.text,
-    margin: '0 0 8px',
-    whiteSpace: 'nowrap',
-  },
-  eventName: { fontWeight: 400, color: theme.textSecondary, whiteSpace: 'nowrap' },
-  subtitle: {
-    fontSize: 14,
-    color: theme.textSecondary,
-    margin: '0 0 24px',
-    lineHeight: 1.5,
-  },
-  form: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 16,
-    marginBottom: 24,
-  },
-  textarea: {
-    padding: '14px 16px',
-    fontSize: 15,
-    border: `1px solid ${theme.border}`,
-    borderRadius: 10,
-    backgroundColor: theme.bgInput,
-    color: theme.text,
-    fontFamily: 'inherit',
-    resize: 'vertical',
-    outline: 'none',
-  },
-  btn: {
-    padding: '14px 24px',
-    fontSize: 16,
-    fontWeight: 600,
-    color: '#fff',
-    backgroundColor: theme.accent,
-    border: 'none',
-    borderRadius: 10,
-    cursor: 'pointer',
-    transition: 'all 0.2s',
-    whiteSpace: 'nowrap',
-  },
-  invalidLinkCard: {
-    marginTop: 24,
-    padding: 24,
-    backgroundColor: theme.errorLight,
-    borderRadius: 12,
-    border: `1px solid ${theme.error}`,
-  },
-  invalidLinkText: { fontSize: 16, color: theme.error, margin: '0 0 8px', fontWeight: 500 },
-  invalidLinkHint: { fontSize: 14, color: theme.textSecondary, margin: 0 },
-  errorCard: { marginBottom: 16, padding: 16, backgroundColor: theme.errorLight, borderRadius: 10, border: `1px solid ${theme.error}` },
-  error: { fontSize: 14, color: theme.error, margin: 0 },
-  errorHint: { fontSize: 13, color: theme.textSecondary, margin: '8px 0 0' },
-  resultCard: {
-    padding: 24,
-    backgroundColor: theme.bgCard,
-    border: `1px solid ${theme.success}`,
-    borderRadius: 12,
-    boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-  },
-  summary: {
-    fontSize: 14,
-    color: theme.text,
-    margin: '0 0 16px',
-    whiteSpace: 'nowrap',
-  },
-  notFound: { color: theme.error },
-  zipBtn: {
-    padding: '10px 20px',
-    marginBottom: 20,
-    fontSize: 14,
-    fontWeight: 500,
-    color: theme.success,
-    backgroundColor: theme.successLight,
-    border: `1px solid ${theme.success}`,
-    borderRadius: 8,
-    cursor: 'pointer',
-    whiteSpace: 'nowrap',
-  },
-  list: { display: 'flex', flexDirection: 'column', gap: 10 },
-  row: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '12px 16px',
-    backgroundColor: theme.bgInput,
-    borderRadius: 8,
-    whiteSpace: 'nowrap',
-  },
-  name: { fontSize: 15, color: theme.text, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
-  actions: { display: 'flex', gap: 12, alignItems: 'center', flexShrink: 0 },
-  downloadLink: {
-    fontSize: 14,
-    color: theme.success,
-    textDecoration: 'none',
-    fontWeight: 500,
-    whiteSpace: 'nowrap',
-    flexShrink: 0,
-  },
-  verifyLink: {
-    fontSize: 13,
-    color: theme.accent,
-    textDecoration: 'none',
-    fontWeight: 500,
-    whiteSpace: 'nowrap',
-    flexShrink: 0,
-  },
-  noPdf: { fontSize: 13, color: theme.textMuted, whiteSpace: 'nowrap', flexShrink: 0 },
-  notFoundList: {
-    marginTop: 16,
-    paddingTop: 16,
-    borderTop: `1px solid ${theme.border}`,
-    fontSize: 13,
-    color: theme.textSecondary,
-    whiteSpace: 'nowrap',
-    overflowX: 'auto',
-  },
-  notFoundLabel: { color: theme.error },
-};

@@ -8,11 +8,14 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "node scripts/check-supabase-env.js && vite build",
+    "build": "vite build",
     "preview": "vite preview",
     "server": "node server.js",
     "start": "node server.js",
     "dev:all": "concurrently \"npm run server\" \"npm run dev\"",
+    "convex:dev": "npx convex dev",
+    "convex:deploy": "npx convex deploy",
+    "convex:codegen": "npx convex codegen",
     "certifier:login": "node scripts/certifier/login-once.js",
     "certifier:run": "node scripts/certifier/run-with-session.js",
     "certifier:wget": "node scripts/certifier/wget-with-session.js",
@@ -23,6 +26,8 @@
     "ultron:check-and-resend-qrs": "node scripts/check-and-resend-qrs.js"
   },
   "dependencies": {
+    "@simplewebauthn/browser": "^13.3.0",
+    "@simplewebauthn/server": "^13.3.0",
     "@supabase/supabase-js": "^2.99.1",
     "cloudinary": "^2.9.0",
     "convex": "^1.32.0",
@@ -35,7 +40,9 @@
     "qrcode": "^1.5.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.30.2"
+    "react-router-dom": "^6.30.2",
+    "three": "^0.184.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.2.1",

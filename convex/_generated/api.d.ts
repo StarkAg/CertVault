@@ -11,6 +11,8 @@
 import type * as certificates from "../certificates.js";
 import type * as events from "../events.js";
 import type * as organizations from "../organizations.js";
+import type * as passkeys from "../passkeys.js";
+import type * as webauthnChallenges from "../webauthnChallenges.js";
 
 import type {
   ApiFromModules,
@@ -22,6 +24,8 @@ declare const fullApi: ApiFromModules<{
   certificates: typeof certificates;
   events: typeof events;
   organizations: typeof organizations;
+  passkeys: typeof passkeys;
+  webauthnChallenges: typeof webauthnChallenges;
 }>;
 
 /**

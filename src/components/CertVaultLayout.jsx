@@ -170,7 +170,7 @@ const VENTARC_NAV = [
 
 const DEFAULT_LOGO = '/image.png';
 
-const HIDE_HEADER_PATHS = ['/dashboard', '/design', '/auth/callback'];
+const HIDE_HEADER_PATHS = ['/dashboard', '/design'];
 
 export default function CertVaultLayout({ children }) {
   const location = useLocation();

@@ -6,12 +6,11 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import CertVaultLayout from './CertVaultLayout';
 import { certVaultTheme as theme } from '../theme';
-import { supabase } from '../lib/supabase';
 
 const DESIGN_STORAGE_KEY = 'certvault_design';
 const CLUB_TEMPLATES_KEY = 'certvault_club_templates';
 
-const DEFAULT_VERIFY_LINE = 'Verify the certificate here - gradex.bond/certvault/verify?id={certificate_id}';
+const DEFAULT_VERIFY_LINE = 'Verify this certificate at /certvault/verify?id={certificate_id}';
 
 const SNAP_THRESHOLD = 0.025;
 const ALIGN_THRESHOLD = 0.008;
@@ -138,34 +137,13 @@ export default function CertVaultDesign() {
   const [authChecked, setAuthChecked] = useState(false);
   const token = authToken || (typeof window !== 'undefined' ? localStorage.getItem('certvault_club_token') : null);
 
-  // Resolve auth: Supabase session or legacy certvault_club_token (same as Dashboard)
+  // Resolve auth from the local organizer token (same as Dashboard)
   useEffect(() => {
-    if (!supabase) {
-      setAuthToken(typeof window !== 'undefined' ? localStorage.getItem('certvault_club_token') : null);
-      setAuthChecked(true);
-      return;
-    }
-    let cancelled = false;
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (cancelled) return;
-      if (session?.access_token) {
-        setAuthToken(session.access_token);
-      } else {
-        setAuthToken(typeof window !== 'undefined' ? localStorage.getItem('certvault_club_token') : null);
-      }
-      setAuthChecked(true);
-    });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (cancelled) return;
-      setAuthToken(session?.access_token || (typeof window !== 'undefined' ? localStorage.getItem('certvault_club_token') : null));
-    });
-    return () => {
-      cancelled = true;
-      subscription?.unsubscribe();
-    };
+    setAuthToken(typeof window !== 'undefined' ? localStorage.getItem('certvault_club_token') : null);
+    setAuthChecked(true);
   }, []);
 
-  // Redirect to login only after we've checked Supabase (so magic-link users aren’t sent to login)
+  // Redirect to login only after we've checked the local auth token.
   useEffect(() => {
     if (!authChecked) return;
     if (!token) {
@@ -477,7 +455,7 @@ export default function CertVaultDesign() {
                 type="text"
                 value={verifyLineText}
                 onChange={(e) => setVerifyLineText(e.target.value)}
-                placeholder="Verify the certificate here - gradex.bond/certvault/verify?id={certificate_id}"
+                placeholder="Verify this certificate at /certvault/verify?id={certificate_id}"
                 style={styles.verifyInput}
               />
             </div>

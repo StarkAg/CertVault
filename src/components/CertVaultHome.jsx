@@ -63,16 +63,16 @@ export default function CertVaultHome() {
           <h2 className="text-xl font-bold tracking-tight text-white">Ventarc</h2>
         </Link>
         <nav className="hidden md:flex items-center gap-10">
-          <a href="/ventarc/ventarc-features-dark.html" className="text-sm font-medium text-slate-300 hover:text-white transition-colors no-underline">
+          <a href="/features" className="text-sm font-medium text-slate-300 hover:text-white transition-colors no-underline">
             Features
           </a>
-          <a href="/ventarc/ventarc-solutions-dark.html" className="text-sm font-medium text-slate-300 hover:text-white transition-colors no-underline">
+          <a href="/solutions" className="text-sm font-medium text-slate-300 hover:text-white transition-colors no-underline">
             Solutions
           </a>
-          <a href="/ventarc/ventarc-pricing-dark.html" className="text-sm font-medium text-slate-300 hover:text-white transition-colors no-underline">
+          <a href="/pricing" className="text-sm font-medium text-slate-300 hover:text-white transition-colors no-underline">
             Pricing
           </a>
-          <a href="/ventarc/ventarc-resources-dark.html" className="text-sm font-medium text-slate-300 hover:text-white transition-colors no-underline">
+          <a href="/resources" className="text-sm font-medium text-slate-300 hover:text-white transition-colors no-underline">
             Resources
           </a>
         </nav>

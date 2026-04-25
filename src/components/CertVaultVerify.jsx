@@ -93,13 +93,21 @@ export default function CertVaultVerify() {
       setTimeout(() => setVisibleStepCount(2), 700),
       setTimeout(() => setVisibleStepCount(3), 1100),
       setTimeout(() => setVisibleStepCount(4), 1500),
-      setTimeout(() => setShowVerificationResult(true), 2100),
+      setTimeout(() => setVisibleStepCount(5), 1900),
+      setTimeout(() => setShowVerificationResult(true), 2450),
     ];
     return () => timeouts.forEach((t) => clearTimeout(t));
   }, [showVerifyModal]);
 
   const showInvalid = result && !result.valid;
   const showValid = result && result.valid;
+  const formattedIssueDate = result?.date_issued
+    ? new Date(result.date_issued).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      })
+    : null;
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#05070b] text-white">
@@ -265,7 +273,9 @@ export default function CertVaultVerify() {
                   </div>
                   <div>
                     <div className="font-semibold text-white text-sm">Verifying the recipient</div>
-                    <div className="text-white/65 text-sm">The owner of this credential is {result?.recipient_name}.</div>
+                    <div className="text-white/65 text-sm">
+                      This credential was issued to {result?.recipient_name}.
+                    </div>
                   </div>
                 </div>
               )}
@@ -276,7 +286,9 @@ export default function CertVaultVerify() {
                   </div>
                   <div>
                     <div className="font-semibold text-white text-sm">Verifying the issuer</div>
-                    <div className="text-white/65 text-sm">The issuer of this credential is {result?.issuing_organization || 'the organization'}.</div>
+                    <div className="text-white/65 text-sm">
+                      The issuing organization is {result?.issuing_organization || 'the organization'}.
+                    </div>
                   </div>
                 </div>
               )}
@@ -287,7 +299,9 @@ export default function CertVaultVerify() {
                   </div>
                   <div>
                     <div className="font-semibold text-white text-sm">Verifying the issuer's status</div>
-                    <div className="text-white/65 text-sm">{(result?.issuing_organization || 'The organization')} has been verified by CertVault.</div>
+                    <div className="text-white/65 text-sm">
+                      {(result?.issuing_organization || 'The organization')} is recognized as a verified issuer on CertVault.
+                    </div>
                   </div>
                 </div>
               )}
@@ -298,7 +312,22 @@ export default function CertVaultVerify() {
                   </div>
                   <div>
                     <div className="font-semibold text-white text-sm">Verifying the credential's ID</div>
-                    <div className="text-white/65 text-sm">The ID of this credential is unique and valid.</div>
+                    <div className="text-white/65 text-sm">
+                      Credential ID {result?.certificate_id || certId} is unique in the registry and matches this issued record.
+                    </div>
+                  </div>
+                </div>
+              )}
+              {visibleStepCount >= 5 && formattedIssueDate && (
+                <div className="flex gap-3">
+                  <div className="size-8 rounded-full bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
+                    <span className="material-symbols-outlined text-emerald-600 text-sm">check</span>
+                  </div>
+                  <div>
+                    <div className="font-semibold text-white text-sm">Verifying the issue date</div>
+                    <div className="text-white/65 text-sm">
+                      This credential was issued on {formattedIssueDate}.
+                    </div>
                   </div>
                 </div>
               )}
@@ -307,8 +336,11 @@ export default function CertVaultVerify() {
               <div className="mt-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-400/20 flex items-start gap-3">
                 <span className="material-symbols-outlined text-emerald-600">verified</span>
                 <div>
-                  <div className="font-semibold text-white">This is the valid credential.</div>
-                  <div className="text-white/65 text-sm mt-1">This credential was securely issued via CertVault. All the displayed information is valid.</div>
+                  <div className="font-semibold text-white">This credential is authentic and valid.</div>
+                  <div className="text-white/65 text-sm mt-1">
+                    The recipient, issuer, credential ID{formattedIssueDate ? ', and issue date ' : ' '}
+                    have been verified against the CertVault record.
+                  </div>
                 </div>
               </div>
             )}

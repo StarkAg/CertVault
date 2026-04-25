@@ -24,6 +24,8 @@ export default function VentarcHeader({
   const isVerify = location.pathname === '/certvault/verify' || location.pathname === '/verify';
   const showMarketingHeaderItems = !minimal && !isDashboard && !isVerify;
   const brandLabel = isDashboard ? 'CERTVAULT' : 'VENTARC';
+  const showCenteredBrand = !isDashboard && !showMarketingHeaderItems;
+  const showDashboardTagline = isDashboard;
 
   useEffect(() => {
     if (!dashboardMenuOpen) return undefined;
@@ -45,6 +47,30 @@ export default function VentarcHeader({
         className="relative flex h-20 w-full items-center justify-between gap-6 px-4 md:px-6 xl:px-8"
         style={{ fontFamily: 'Inter, sans-serif' }}
       >
+        {showCenteredBrand ? (
+          <div className="pointer-events-none absolute inset-x-0 hidden justify-center md:flex">
+            <div className="flex flex-col items-center text-center">
+              <div
+                className="text-lg font-black tracking-[-0.08em] text-white"
+                style={{ fontFamily: 'Space Grotesk, sans-serif' }}
+              >
+                VENTARC
+              </div>
+              <div className="text-[10px] font-semibold uppercase tracking-[0.28em] text-white/55">
+                A GradeX Product
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {showDashboardTagline ? (
+          <div className="pointer-events-none absolute inset-x-0 hidden justify-center md:flex">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-white/60">
+              A GradeX Product
+            </div>
+          </div>
+        ) : null}
+
         <Link to="/" className="flex min-w-0 items-center no-underline">
           <div
             className="text-3xl md:text-[2.15rem] font-black tracking-[-0.08em] text-white transition-opacity hover:opacity-90"

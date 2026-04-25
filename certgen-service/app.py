@@ -533,15 +533,16 @@ def preview():
         template_path, temp_template_path = resolve_template_path(template, 'temp_preview')
         cert_img = generate_certificate_image(template_path, name, certificate_id, settings)
         width, height = cert_img.size
-        if width > 800:
-            cert_img = cert_img.resize((800, int(height * 800 / width)), Image.LANCZOS)
+        preview_max_width = 1600
+        if width > preview_max_width:
+            cert_img = cert_img.resize((preview_max_width, int(height * preview_max_width / width)), Image.LANCZOS)
         buf = io.BytesIO()
-        cert_img.save(buf, format='JPEG', quality=85)
+        cert_img.save(buf, format='PNG', optimize=True)
         buf.seek(0)
         preview_b64 = base64.b64encode(buf.getvalue()).decode('utf-8')
         return jsonify({
             'success': True,
-            'preview': f'data:image/jpeg;base64,{preview_b64}',
+            'preview': f'data:image/png;base64,{preview_b64}',
             'generator_version': SERVICE_VERSION,
             'font_resolution': LAST_FONT_RESOLUTION,
             'size_normalization': LAST_SIZE_NORMALIZATION,

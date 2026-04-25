@@ -1,6 +1,6 @@
-const MAX_TEMPLATE_DIM = 2000; // Balanced quality and speed
-const MAX_DATA_URL_LENGTH = 3_000_000; // ~3MB before we force downscaling
-const JPEG_QUALITY = 0.88; // Balanced quality for speed
+const MAX_TEMPLATE_DIM = 3200;
+const MAX_DATA_URL_LENGTH = 8_000_000;
+const JPEG_QUALITY = 0.92;
 
 /** Compress template image to stay under Cloudflare/nginx limits. */
 export async function compressTemplateImage(dataUrl) {
@@ -25,6 +25,12 @@ export async function compressTemplateImage(dataUrl) {
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, w, h);
       ctx.drawImage(img, 0, 0, w, h);
+      const preferPng = dataUrl.startsWith('data:image/png') || dataUrl.startsWith('data:image/svg');
+      const losslessResult = preferPng ? canvas.toDataURL('image/png') : '';
+      if (preferPng && losslessResult.length <= MAX_DATA_URL_LENGTH) {
+        resolve(losslessResult);
+        return;
+      }
       resolve(canvas.toDataURL('image/jpeg', JPEG_QUALITY));
     };
     img.onerror = () => resolve(dataUrl);

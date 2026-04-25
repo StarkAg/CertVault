@@ -35,17 +35,17 @@ function defaultTemplateSettings() {
   return {
     text_x: 0.5,
     text_y: 0.45,
-    font_size: 60,
+    font_size: 0.1,
     font_color: '#000000',
     font_family: 'Georgia, serif',
     show_cert_id: false,
     cert_id_x: 0.5,
     cert_id_y: 0.85,
-    cert_id_size: 24,
+    cert_id_size: 0.03,
     verify_line_text: defaultVerifyLine(),
     verify_line_x: 0.5,
     verify_line_y: 0.92,
-    verify_line_size: 12,
+    verify_line_size: 0.022,
 
     verify_line_color: '#666666',
     verify_line_font: "'Inter', sans-serif",
@@ -206,6 +206,21 @@ function normalizePreviewFontSize(rawSize, width, height, role) {
   if (size > 0 && size <= 1) size *= height;
 
   return Math.round(Math.max(minimums[role], Math.min(size, maximums[role])));
+}
+
+function fontSizePercent(rawSize, width, height, role) {
+  if (!width || !height) {
+    const fallback = typeof rawSize === 'number' && rawSize > 0 && rawSize <= 1 ? rawSize * 100 : 0;
+    return Number(fallback.toFixed(2));
+  }
+  const normalizedPixels = normalizePreviewFontSize(rawSize, width, height, role);
+  return Number(((normalizedPixels / height) * 100).toFixed(2));
+}
+
+function percentToFontSize(value) {
+  const percent = Number(value);
+  if (!Number.isFinite(percent) || percent <= 0) return 0;
+  return Number((percent / 100).toFixed(5));
 }
 
 function buildCanvasFont(fontSize, fontFamily, fontWeight = 400) {
@@ -444,6 +459,30 @@ export default function CertVaultDashboard() {
   const previewScale = previewMetrics.naturalWidth && previewMetrics.renderedWidth
     ? previewMetrics.renderedWidth / previewMetrics.naturalWidth
     : 1;
+  const nameFontPercent = useMemo(() => (
+    fontSizePercent(
+      templateSettings.font_size,
+      previewMetrics.naturalWidth,
+      previewMetrics.naturalHeight,
+      'name'
+    )
+  ), [
+    previewMetrics.naturalHeight,
+    previewMetrics.naturalWidth,
+    templateSettings.font_size,
+  ]);
+  const verifyFontPercent = useMemo(() => (
+    fontSizePercent(
+      templateSettings.verify_line_size,
+      previewMetrics.naturalWidth,
+      previewMetrics.naturalHeight,
+      'verify'
+    )
+  ), [
+    previewMetrics.naturalHeight,
+    previewMetrics.naturalWidth,
+    templateSettings.verify_line_size,
+  ]);
   const liveNameMetrics = useMemo(() => {
     if (!previewMetrics.naturalWidth || !previewMetrics.naturalHeight) return null;
     return fitPreviewText({
@@ -1718,7 +1757,7 @@ export default function CertVaultDashboard() {
                           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                             <div>
                               <p className="text-sm font-semibold">Adjust {selectedTemplateLayer === 'verify' ? 'verify line' : 'recipient name'}</p>
-                              <p className="mt-1 text-xs text-white/60">Drag the text directly. Use nudges for tiny mouse-only moves.</p>
+                              <p className="mt-1 text-xs text-white/60">Drag to position. X and Y stay as percentages, and font size is saved as a percentage of template height for the real PDF.</p>
                             </div>
                             <div className="flex flex-wrap items-center gap-2">
                               <button
@@ -1999,20 +2038,20 @@ export default function CertVaultDashboard() {
                                     </div>
                                     <div className="grid grid-cols-[1fr_auto] gap-3">
                                       <label className="block text-xs font-semibold uppercase tracking-[0.16em] text-white/75">
-                                        Size
+                                        Size (% of height)
                                         <input
                                           type="range"
-                                          min="24"
-                                          max="120"
-                                          step="1"
-                                          value={templateSettings.font_size}
+                                          min="4"
+                                          max="18"
+                                          step="0.1"
+                                          value={nameFontPercent}
                                           onChange={(e) => {
                                             setShowTemplateOverlay(true);
-                                            updateTemplateSettings((current) => ({ ...current, font_size: Number(e.target.value) }));
+                                            updateTemplateSettings((current) => ({ ...current, font_size: percentToFontSize(e.target.value) }));
                                           }}
                                           className="mt-2 w-full"
                                         />
-                                        <span className="mt-1 block text-[11px] text-white/60">{templateSettings.font_size}px</span>
+                                        <span className="mt-1 block text-[11px] text-white/60">{nameFontPercent}%</span>
                                       </label>
                                       <label className="block text-xs font-semibold uppercase tracking-[0.16em] text-white/75">
                                         Color
@@ -2092,20 +2131,20 @@ export default function CertVaultDashboard() {
                                     </div>
                                     <div className="grid grid-cols-[1fr_auto] gap-3">
                                       <label className="block text-xs font-semibold uppercase tracking-[0.16em] text-white/75">
-                                        Size
+                                        Size (% of height)
                                         <input
                                           type="range"
-                                          min="8"
-                                          max="48"
-                                          step="1"
-                                          value={templateSettings.verify_line_size}
+                                          min="0.8"
+                                          max="6"
+                                          step="0.05"
+                                          value={verifyFontPercent}
                                           onChange={(e) => {
                                             setShowTemplateOverlay(true);
-                                            updateTemplateSettings((current) => ({ ...current, verify_line_size: Number(e.target.value) }));
+                                            updateTemplateSettings((current) => ({ ...current, verify_line_size: percentToFontSize(e.target.value) }));
                                           }}
                                           className="mt-2 w-full"
                                         />
-                                        <span className="mt-1 block text-[11px] text-white/60">{templateSettings.verify_line_size}px</span>
+                                        <span className="mt-1 block text-[11px] text-white/60">{verifyFontPercent}%</span>
                                       </label>
                                       <label className="block text-xs font-semibold uppercase tracking-[0.16em] text-white/75">
                                         Color
@@ -2209,14 +2248,13 @@ export default function CertVaultDashboard() {
 
                       <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
                         <div className="rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[linear-gradient(180deg,rgba(255,255,255,0.035)_0%,rgba(255,255,255,0.015)_100%),rgba(9,15,24,0.92)] px-4 py-3 text-xs font-medium text-[var(--apple-text-secondary)]">
-                          Click the name or verify line on the preview to open an on-template settings overlay right where you are editing.
+                          Keep it simple: drag the selected text, then fine-tune X, Y, and size. The same percentages are used in the real PDF certificates.
                         </div>
                         <div className="mt-4 space-y-3 text-sm text-[var(--apple-text-secondary)]">
-                          <div>1. Click the large recipient name to edit its font, color, size, and position.</div>
-                          <div>2. Click the verify line to edit its text, font, color, size, and position.</div>
-                          <div>3. Drag either text element directly on the preview to reposition it.</div>
-                          <div>4. Use arrow keys after selecting a text layer for fine movement.</div>
-                          <div>5. The selected layer glows so you can see which overlay controls are active.</div>
+                          <div>Name size: {nameFontPercent}% of template height</div>
+                          <div>Verify size: {verifyFontPercent}% of template height</div>
+                          <div>Name position: X {Math.round(templateSettings.text_x * 100)}%, Y {Math.round(templateSettings.text_y * 100)}%</div>
+                          <div>Verify position: X {Math.round(templateSettings.verify_line_x * 100)}%, Y {Math.round(templateSettings.verify_line_y * 100)}%</div>
                         </div>
                       </div>
                     </div>

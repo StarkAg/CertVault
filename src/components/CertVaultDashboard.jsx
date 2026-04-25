@@ -364,7 +364,6 @@ export default function CertVaultDashboard() {
   });
   const [pendingTemplateDrag, setPendingTemplateDrag] = useState(null);
   const [dragTarget, setDragTarget] = useState('');
-  const [liveTemplatePreviewActive, setLiveTemplatePreviewActive] = useState(false);
   const [selectedTemplateLayer, setSelectedTemplateLayer] = useState('name');
   const [showTemplateOverlay, setShowTemplateOverlay] = useState(false);
   const [configLoaded, setConfigLoaded] = useState(false);
@@ -492,10 +491,8 @@ export default function CertVaultDashboard() {
     ? templatePreviewUrl.trim()
     : (typeof templateAssetUrl === 'string' ? templateAssetUrl.trim() : '');
   const usingRenderedTemplatePreview = Boolean(renderedTemplatePreviewUrl);
-  const showLiveTemplateText = liveTemplatePreviewActive || renderedTemplatePreviewLoading || !usingRenderedTemplatePreview;
-  const templatePreviewImageUrl = showLiveTemplateText
-    ? activeTemplateSource
-    : renderedTemplatePreviewUrl || activeTemplateSource;
+  const showLiveTemplateText = !usingRenderedTemplatePreview;
+  const templatePreviewImageUrl = renderedTemplatePreviewUrl || activeTemplateSource;
   const templatePreviewStatus = templateSaving
     ? 'Saving confirmed positions to Convex...'
     : templateSettingsDirty
@@ -504,9 +501,7 @@ export default function CertVaultDashboard() {
       ? 'Rendering PDF-accurate preview...'
       : renderedTemplatePreviewError
         ? 'Preview render failed'
-        : liveTemplatePreviewActive
-          ? 'Live adjustment preview'
-          : usingRenderedTemplatePreview
+        : usingRenderedTemplatePreview
           ? 'PDF-accurate preview'
           : templateReady
             ? 'Saved to event'
@@ -531,7 +526,6 @@ export default function CertVaultDashboard() {
   }
 
   function updateTemplateSettings(updater) {
-    setLiveTemplatePreviewActive(true);
     setTemplateSettings(updater);
   }
 
@@ -634,7 +628,6 @@ export default function CertVaultDashboard() {
     setRenderedTemplatePreviewUrl('');
     setRenderedTemplatePreviewLoading(false);
     setRenderedTemplatePreviewError('');
-    setLiveTemplatePreviewActive(false);
     if (!eventId) {
       setParticipantCsv('');
       setParticipantCsvSaveError('');
@@ -757,7 +750,6 @@ export default function CertVaultDashboard() {
     if (!selectedEventId || !templateReady) return;
 
     setRenderedTemplatePreviewError('');
-    setLiveTemplatePreviewActive(true);
 
     try {
       const data = await saveTemplateConfig({
@@ -850,7 +842,6 @@ export default function CertVaultDashboard() {
       setRenderedTemplatePreviewUrl('');
       setRenderedTemplatePreviewLoading(false);
       setRenderedTemplatePreviewError('');
-      setLiveTemplatePreviewActive(false);
       return undefined;
     }
 
@@ -878,7 +869,6 @@ export default function CertVaultDashboard() {
         }
         if (!cancelled) {
           setRenderedTemplatePreviewUrl(data.preview || '');
-          setLiveTemplatePreviewActive(false);
         }
       } catch (error) {
         if (!cancelled) {
@@ -1004,14 +994,20 @@ export default function CertVaultDashboard() {
     setSelectedTemplateName(file.name);
     setRenderedTemplatePreviewUrl('');
     setRenderedTemplatePreviewError('');
-    setLiveTemplatePreviewActive(false);
-    let dataUrl = await fileToDataUrl(file);
-    if (dataUrl.startsWith('data:image/svg')) {
-      dataUrl = await svgToPngDataUrl(dataUrl);
+    try {
+      let dataUrl = await fileToDataUrl(file);
+      if (dataUrl.startsWith('data:image/svg')) {
+        dataUrl = await svgToPngDataUrl(dataUrl);
+      }
+      dataUrl = await compressTemplateImage(dataUrl);
+      setTemplatePreviewUrl(dataUrl);
+      const data = await saveTemplateConfig({ template_data_url: dataUrl });
+      if (!data?.success) {
+        throw new Error(data?.error || 'Could not upload the template image');
+      }
+    } catch (error) {
+      setRenderedTemplatePreviewError(error.message || 'Could not upload the template image');
     }
-    dataUrl = await compressTemplateImage(dataUrl);
-    setTemplatePreviewUrl(dataUrl);
-    await saveTemplateConfig({ template_data_url: dataUrl });
   }
 
   async function handleTemplateFileChange(event) {
@@ -1111,7 +1107,6 @@ export default function CertVaultDashboard() {
         );
         if (distance < 4) return;
         setDragTarget(activeTarget);
-        setLiveTemplatePreviewActive(true);
       }
 
       updateDraggedPosition(event.clientX, event.clientY, activeTarget);
@@ -1842,6 +1837,16 @@ export default function CertVaultDashboard() {
                                   ? {
                                       width: `${Math.max((liveNameMetrics?.width || 0) * previewScale + 40, 150)}px`,
                                       height: `${Math.max((liveNameMetrics?.height || 0) * previewScale + 24, 44)}px`,
+                                      border: selectedTemplateLayer === 'name'
+                                        ? '2px dashed rgba(143,184,255,0.95)'
+                                        : '1px dashed rgba(143,184,255,0.45)',
+                                      background: dragTarget === 'name'
+                                        ? 'rgba(143,184,255,0.14)'
+                                        : selectedTemplateLayer === 'name'
+                                          ? 'rgba(143,184,255,0.08)'
+                                          : 'rgba(255,255,255,0.03)',
+                                      borderRadius: '18px',
+                                      boxSizing: 'border-box',
                                     }
                                   : {
                                       width: `${Math.max((liveNameMetrics?.width || 0) * previewScale + 24, 140)}px`,
@@ -1891,6 +1896,16 @@ export default function CertVaultDashboard() {
                                   ? {
                                       width: `${Math.max((liveVerifyMetrics?.width || 0) * previewScale + 32, 240)}px`,
                                       height: `${Math.max((liveVerifyMetrics?.height || 0) * previewScale + 18, 32)}px`,
+                                      border: selectedTemplateLayer === 'verify'
+                                        ? '2px dashed rgba(143,184,255,0.95)'
+                                        : '1px dashed rgba(143,184,255,0.45)',
+                                      background: dragTarget === 'verify'
+                                        ? 'rgba(143,184,255,0.14)'
+                                        : selectedTemplateLayer === 'verify'
+                                          ? 'rgba(143,184,255,0.08)'
+                                          : 'rgba(255,255,255,0.03)',
+                                      borderRadius: '16px',
+                                      boxSizing: 'border-box',
                                     }
                                   : {
                                       width: `${Math.max((liveVerifyMetrics?.width || 0) * previewScale + 20, 220)}px`,
@@ -2185,6 +2200,11 @@ export default function CertVaultDashboard() {
                           )}
                         </div>
                         <p className="mt-3 text-xs text-[var(--apple-text-secondary)]">PNG and JPEG work best. The uploaded template is saved to cloud storage and reused during generation.</p>
+                        {renderedTemplatePreviewError && (
+                          <div className="mt-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                            {renderedTemplatePreviewError}
+                          </div>
+                        )}
                       </div>
 
                       <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">

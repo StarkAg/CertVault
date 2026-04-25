@@ -46,6 +46,11 @@ import {
 // Certificate generator service URL (Flask service on same server)
 const CERTGEN_SERVICE_URL = process.env.CERTGEN_SERVICE_URL?.trim() || '';
 const GMAIL_SEND_DELAY_MS = Math.max(0, Number.parseInt(process.env.GMAIL_SEND_DELAY_MS || '3000', 10) || 3000);
+const PDF_FETCH_TIMEOUT_MS = Math.max(1000, Number.parseInt(process.env.CERTVAULT_PDF_FETCH_TIMEOUT_MS || '15000', 10) || 15000);
+const SMTP_CONNECTION_TIMEOUT_MS = Math.max(1000, Number.parseInt(process.env.CERTVAULT_SMTP_CONNECTION_TIMEOUT_MS || '15000', 10) || 15000);
+const SMTP_GREETING_TIMEOUT_MS = Math.max(1000, Number.parseInt(process.env.CERTVAULT_SMTP_GREETING_TIMEOUT_MS || '15000', 10) || 15000);
+const SMTP_SOCKET_TIMEOUT_MS = Math.max(1000, Number.parseInt(process.env.CERTVAULT_SMTP_SOCKET_TIMEOUT_MS || '20000', 10) || 20000);
+const BREVO_SEND_TIMEOUT_MS = Math.max(1000, Number.parseInt(process.env.CERTVAULT_BREVO_TIMEOUT_MS || '20000', 10) || 20000);
 const BREVO_API_KEY = process.env.BREVO_API_KEY?.trim() || '';
 const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
 const PASSWORD_HASH_PREFIX = 'scrypt';
@@ -523,6 +528,9 @@ function createOrgTransporter(org, override = {}) {
   return nodemailer.createTransport({
     service: 'gmail',
     auth: { user, pass },
+    connectionTimeout: SMTP_CONNECTION_TIMEOUT_MS,
+    greetingTimeout: SMTP_GREETING_TIMEOUT_MS,
+    socketTimeout: SMTP_SOCKET_TIMEOUT_MS,
   });
 }
 
@@ -531,11 +539,22 @@ function getMailerProvider() {
 }
 
 async function fetchPdfBuffer(url) {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Could not fetch certificate PDF (HTTP ${response.status})`);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), PDF_FETCH_TIMEOUT_MS);
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    if (!response.ok) {
+      throw new Error(`Could not fetch certificate PDF (HTTP ${response.status})`);
+    }
+    return Buffer.from(await response.arrayBuffer());
+  } catch (error) {
+    if (error?.name === 'AbortError') {
+      throw new Error(`Timed out fetching certificate PDF after ${PDF_FETCH_TIMEOUT_MS}ms`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
   }
-  return Buffer.from(await response.arrayBuffer());
 }
 
 function escapeHtml(value) {
@@ -560,6 +579,7 @@ async function sendCertificateEmail({ transporter, org, event, cert, req }) {
   const fromName = String(org.mailer_from_name || org.name || 'CertVault').trim();
   const recipientEmail = String(cert.recipient_email || '').trim();
   const verifyUrl = `${getBaseUrl(req)}/certvault/verify?id=${encodeURIComponent(cert.certificate_id)}`;
+  console.log(`[CertVault] Email send start ${cert.certificate_id} -> ${recipientEmail}`);
   const pdfBuffer = await fetchPdfBuffer(cert.pdf_url);
   const brandLine = 'CertVault, a GradeX product';
   const issuedByLine = `Issued by ${org.name} through ${brandLine}`;
@@ -611,6 +631,7 @@ ${issuedByLine}`,
       },
     ],
   });
+  console.log(`[CertVault] Email send success ${cert.certificate_id} -> ${recipientEmail}`);
   return info;
 }
 
@@ -629,18 +650,24 @@ async function sendCertificateEmailWithBrevo({ org, event, cert, req }) {
   const pdfBuffer = await fetchPdfBuffer(cert.pdf_url);
   const brandLine = 'CertVault, a GradeX product';
   const issuedByLine = `Issued by ${org.name} through ${brandLine}`;
-  const response = await fetch(BREVO_API_URL, {
-    method: 'POST',
-    headers: {
-      accept: 'application/json',
-      'api-key': BREVO_API_KEY,
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({
-      sender: { name: fromName, email: fromAddress },
-      to: [{ email: recipientEmail, name: cert.recipient_name }],
-      subject: `${event.name} Certificate for ${cert.recipient_name}`,
-      textContent: `Hi ${cert.recipient_name},
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), BREVO_SEND_TIMEOUT_MS);
+  console.log(`[CertVault] Email send start ${cert.certificate_id} -> ${recipientEmail}`);
+  let response;
+  try {
+    response = await fetch(BREVO_API_URL, {
+      method: 'POST',
+      headers: {
+        accept: 'application/json',
+        'api-key': BREVO_API_KEY,
+        'content-type': 'application/json',
+      },
+      signal: controller.signal,
+      body: JSON.stringify({
+        sender: { name: fromName, email: fromAddress },
+        to: [{ email: recipientEmail, name: cert.recipient_name }],
+        subject: `${event.name} Certificate for ${cert.recipient_name}`,
+        textContent: `Hi ${cert.recipient_name},
 
 Your certificate for ${event.name} is attached to this email as a PDF.
 
@@ -668,13 +695,22 @@ ${issuedByLine}`,
           content: pdfBuffer.toString('base64'),
         },
       ],
-    }),
-  });
+      }),
+    });
+  } catch (error) {
+    if (error?.name === 'AbortError') {
+      throw new Error(`Brevo send timed out after ${BREVO_SEND_TIMEOUT_MS}ms`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     throw new Error(data.message || `Brevo send failed with HTTP ${response.status}`);
   }
+  console.log(`[CertVault] Email send success ${cert.certificate_id} -> ${recipientEmail}`);
   return { messageId: data.messageId || data.messageIds?.[0] || '' };
 }
 

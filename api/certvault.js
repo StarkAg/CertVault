@@ -561,7 +561,8 @@ async function sendCertificateEmail({ transporter, org, event, cert, req }) {
   const recipientEmail = String(cert.recipient_email || '').trim();
   const verifyUrl = `${getBaseUrl(req)}/certvault/verify?id=${encodeURIComponent(cert.certificate_id)}`;
   const pdfBuffer = await fetchPdfBuffer(cert.pdf_url);
-  const issuedByLine = `Issued by ${org.name} via VentArc By GradeX`;
+  const brandLine = 'CertVault, a GradeX product';
+  const issuedByLine = `Issued by ${org.name} through ${brandLine}`;
   const previewUrl = pdfDownloadUrlForEmail(cert.pdf_url, req);
   const info = await transporter.sendMail({
     from: `"${fromName}" <${fromAddress}>`,
@@ -575,12 +576,14 @@ Certificate ID: ${cert.certificate_id}
 
 Verify online: ${verifyUrl}
 
+${brandLine}
+
 ${issuedByLine}`,
     html: `
       <div style="margin:0;padding:0;background:#f3f6fb;font-family:Arial,Helvetica,sans-serif;color:#111827;">
         <div style="max-width:640px;margin:0 auto;padding:32px 18px;">
           <div style="background:#05070b;border-radius:22px 22px 0 0;padding:28px 30px;color:#ffffff;">
-            <div style="font-size:12px;letter-spacing:0.22em;text-transform:uppercase;color:#8fb8ff;font-weight:700;">CertVault</div>
+            <div style="font-size:12px;letter-spacing:0.22em;text-transform:uppercase;color:#8fb8ff;font-weight:700;">${brandLine}</div>
             <h1 style="margin:12px 0 0;font-size:28px;line-height:1.15;">Your certificate is ready</h1>
           </div>
           <div style="background:#ffffff;border:1px solid #e5e7eb;border-top:0;border-radius:0 0 22px 22px;padding:30px;">
@@ -594,6 +597,7 @@ ${issuedByLine}`,
               <a href="${verifyUrl}" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;border-radius:12px;padding:13px 18px;font-size:14px;font-weight:800;">Verify Certificate</a>
               <a href="${previewUrl}" style="display:inline-block;margin-left:10px;color:#2563eb;text-decoration:none;font-size:14px;font-weight:800;">View PDF</a>
             </div>
+            <p style="margin:0 0 8px;color:#111827;font-size:14px;font-weight:700;line-height:1.6;">${escapeHtml(brandLine)}</p>
             <p style="margin:0;color:#64748b;font-size:13px;line-height:1.6;">${escapeHtml(issuedByLine)}</p>
           </div>
         </div>
@@ -623,7 +627,8 @@ async function sendCertificateEmailWithBrevo({ org, event, cert, req }) {
 
   const verifyUrl = `${getBaseUrl(req)}/certvault/verify?id=${encodeURIComponent(cert.certificate_id)}`;
   const pdfBuffer = await fetchPdfBuffer(cert.pdf_url);
-  const issuedByLine = `Issued by ${org.name} via VentArc By GradeX`;
+  const brandLine = 'CertVault, a GradeX product';
+  const issuedByLine = `Issued by ${org.name} through ${brandLine}`;
   const response = await fetch(BREVO_API_URL, {
     method: 'POST',
     headers: {
@@ -643,13 +648,17 @@ Certificate ID: ${cert.certificate_id}
 
 Verify online: ${verifyUrl}
 
+${brandLine}
+
 ${issuedByLine}`,
       htmlContent: `
         <div style="font-family: Arial, sans-serif; color: #111827; line-height: 1.6;">
+          <p style="margin:0 0 12px; font-size:12px; letter-spacing:0.18em; text-transform:uppercase; color:#2563eb; font-weight:700;">${brandLine}</p>
           <p>Hi ${cert.recipient_name},</p>
           <p>Your certificate for <strong>${event.name}</strong> is attached to this email as a PDF.</p>
           <p>Certificate ID: <strong>${cert.certificate_id}</strong></p>
           <p>Verify online: <a href="${verifyUrl}">${verifyUrl}</a></p>
+          <p><strong>${brandLine}</strong></p>
           <p>${issuedByLine}</p>
         </div>
       `,

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import { compressTemplateImage } from '../utils/certvaultCompress';
 import { pdfDownloadUrl } from '../utils/certvaultPdfUrl';
@@ -221,12 +221,17 @@ function areTemplateSettingsEqual(a, b) {
   return JSON.stringify(a || {}) === JSON.stringify(b || {});
 }
 
+function getStoredClubToken() {
+  if (typeof window === 'undefined') return '';
+  return localStorage.getItem('certvault_club_token') || '';
+}
+
 export default function CertVaultDashboard() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [authToken, setAuthToken] = useState(null);
-  const [authResolved, setAuthResolved] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [authToken, setAuthToken] = useState(getStoredClubToken);
+  const [authResolved, setAuthResolved] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [organization, setOrganization] = useState(null);
   const [events, setEvents] = useState([]);
   const [selectedEventId, setSelectedEventId] = useState('');
@@ -291,7 +296,7 @@ export default function CertVaultDashboard() {
   const templatePreviewContainerRef = useRef(null);
   const templatePreviewImageRef = useRef(null);
 
-  const token = authToken || (typeof window !== 'undefined' ? localStorage.getItem('certvault_club_token') : null);
+  const token = authToken;
   const selectedEvent = events.find((event) => event.id === selectedEventId) || null;
   const parsedCsv = useMemo(() => parseParticipantCsv(participantCsv), [participantCsv]);
   const requestedStep = searchParams.get('step') || 'event';
@@ -399,7 +404,7 @@ export default function CertVaultDashboard() {
   }
 
   async function fetchWithAuth(url, options = {}) {
-    const currentToken = authToken || (typeof window !== 'undefined' ? localStorage.getItem('certvault_club_token') : null);
+    const currentToken = authToken || getStoredClubToken();
     return await fetch(url, {
       ...options,
       headers: {
@@ -584,22 +589,19 @@ export default function CertVaultDashboard() {
   }
 
   useEffect(() => {
-    const localToken = typeof window !== 'undefined' ? localStorage.getItem('certvault_club_token') : null;
-    setAuthToken(localToken || '');
-    setAuthResolved(true);
-  }, []);
-
-  useEffect(() => {
     if (!authResolved) return;
     if (!token) {
+      setLoading(false);
       navigate('/login?next=/dashboard', { replace: true });
       return;
     }
 
     let cancelled = false;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
     setLoading(true);
 
-    fetchWithAuth(`${API_BASE}?action=me`)
+    fetchWithAuth(`${API_BASE}?action=me`, { signal: controller.signal })
       .then((res) => res.json())
       .then(async (data) => {
         if (cancelled) return;
@@ -608,15 +610,28 @@ export default function CertVaultDashboard() {
           await Promise.all([loadEvents(), loadMailerConfig()]);
         } else {
           localStorage.removeItem('certvault_club_token');
+          setAuthToken('');
           navigate('/login?next=/dashboard', { replace: true });
         }
       })
+      .catch((error) => {
+        if (cancelled) return;
+        console.warn('[CertVault] Dashboard auth check failed:', error?.message || error);
+        localStorage.removeItem('certvault_club_token');
+        setAuthToken('');
+        navigate('/login?next=/dashboard', { replace: true });
+      })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        clearTimeout(timeout);
+        if (!cancelled) {
+          setLoading(false);
+        }
       });
 
     return () => {
       cancelled = true;
+      clearTimeout(timeout);
+      controller.abort();
     };
   }, [authResolved, token, navigate]);
 
@@ -1231,8 +1246,21 @@ export default function CertVaultDashboard() {
     }
   }
 
-  if (loading || !authResolved || token === null) {
-    return null;
+  if (authResolved && !token) {
+    return <Navigate to="/login?next=/dashboard" replace />;
+  }
+
+  if (loading || !authResolved) {
+    return (
+      <div className="relative min-h-screen overflow-hidden bg-[#05070b] text-white">
+        <VentarcSceneBackground page="features" />
+        <div className="relative z-10 flex min-h-screen items-center justify-center px-6">
+          <div className="rounded-3xl border border-white/10 bg-[rgba(9,15,24,0.82)] px-6 py-5 text-sm font-semibold text-white/75 shadow-[0_30px_90px_-45px_rgba(0,0,0,0.9)] backdrop-blur-xl">
+            Loading dashboard...
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

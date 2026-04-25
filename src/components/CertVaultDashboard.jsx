@@ -265,6 +265,7 @@ export default function CertVaultDashboard() {
   const [participantCsvSaveError, setParticipantCsvSaveError] = useState('');
   const [participantCsvSavedAt, setParticipantCsvSavedAt] = useState(null);
   const [templateSettings, setTemplateSettings] = useState(defaultTemplateSettings());
+  const [savedTemplateSettings, setSavedTemplateSettings] = useState(defaultTemplateSettings());
   const [templateAssetUrl, setTemplateAssetUrl] = useState('');
   const [templatePreviewUrl, setTemplatePreviewUrl] = useState('');
   const [renderedTemplatePreviewUrl, setRenderedTemplatePreviewUrl] = useState('');
@@ -334,6 +335,7 @@ export default function CertVaultDashboard() {
           title: 'CSV is ready for template + generation',
         };
   const templateReady = Boolean(templateAssetUrl || templatePreviewUrl);
+  const templateSettingsDirty = !areTemplateSettingsEqual(templateSettings, savedTemplateSettings);
   const hasCertificates = certificates.length > 0;
   const sendResultSentCount = Array.isArray(sendResult?.sent)
     ? sendResult.sent.length
@@ -346,6 +348,8 @@ export default function CertVaultDashboard() {
     : 0;
   const templateContinueReason = !templateReady
     ? 'Upload and save a certificate template first.'
+    : templateSettingsDirty
+      ? 'Confirm template positions before generating certificates.'
     : !parsedCsv.participants.length
       ? 'Add at least one participant row in the CSV step.'
       : parsedCsv.errors.length
@@ -358,12 +362,14 @@ export default function CertVaultDashboard() {
     ? templatePreviewUrl.trim()
     : (typeof templateAssetUrl === 'string' ? templateAssetUrl.trim() : '');
   const usingRenderedTemplatePreview = Boolean(renderedTemplatePreviewUrl);
-  const showLiveTemplateText = liveTemplatePreviewActive || !usingRenderedTemplatePreview;
+  const showLiveTemplateText = liveTemplatePreviewActive || templateSettingsDirty || renderedTemplatePreviewLoading || !usingRenderedTemplatePreview;
   const templatePreviewImageUrl = showLiveTemplateText
     ? activeTemplateSource
     : renderedTemplatePreviewUrl || activeTemplateSource;
   const templatePreviewStatus = templateSaving
-    ? 'Saving...'
+    ? 'Saving confirmed positions to Convex...'
+    : templateSettingsDirty
+      ? 'Unsaved draft - click Confirm'
     : renderedTemplatePreviewLoading
       ? 'Rendering PDF-accurate preview...'
       : renderedTemplatePreviewError
@@ -394,10 +400,14 @@ export default function CertVaultDashboard() {
     revealTemplateOverlay(layer);
   }
 
+  function updateTemplateSettings(updater) {
+    setLiveTemplatePreviewActive(true);
+    setTemplateSettings(updater);
+  }
+
   function nudgeTemplateLayer(layer = selectedTemplateLayer, deltaX = 0, deltaY = 0, amount = 0.004) {
     revealTemplateOverlay(layer);
-    setLiveTemplatePreviewActive(true);
-    setTemplateSettings((current) => {
+    updateTemplateSettings((current) => {
       if (layer === 'verify') {
         return {
           ...current,
@@ -503,6 +513,7 @@ export default function CertVaultDashboard() {
       setTemplatePreviewUrl('');
       setSelectedTemplateName('');
       setTemplateSettings(defaultTemplateSettings());
+      setSavedTemplateSettings(defaultTemplateSettings());
       return;
     }
 
@@ -523,6 +534,7 @@ export default function CertVaultDashboard() {
     setTemplatePreviewUrl(data.config?.template_asset_url || '');
     setSelectedTemplateName(data.config?.template_asset_url ? 'Saved event template' : '');
     setTemplateSettings(settings);
+    setSavedTemplateSettings(settings);
     setConfigLoaded(true);
   }
 
@@ -543,6 +555,7 @@ export default function CertVaultDashboard() {
   async function saveTemplateConfig(payload = {}, options = {}) {
     if (!selectedEventId) return null;
     const { suppressTemplateSaving = false } = options;
+    const savingTemplateSettings = payload.template_settings !== undefined;
     if (!suppressTemplateSaving) {
       setTemplateSaving(true);
     }
@@ -552,7 +565,7 @@ export default function CertVaultDashboard() {
         body: JSON.stringify({
           eventId: selectedEventId,
           participant_csv: payload.participant_csv !== undefined ? payload.participant_csv : participantCsv,
-          template_settings: payload.template_settings !== undefined ? payload.template_settings : templateSettings,
+          template_settings: savingTemplateSettings ? payload.template_settings : savedTemplateSettings,
           ...(payload.template_data_url ? { template_data_url: payload.template_data_url } : {}),
         }),
       });
@@ -565,9 +578,12 @@ export default function CertVaultDashboard() {
             ...defaultTemplateSettings(),
             ...data.config.template_settings,
           };
-          setTemplateSettings((current) => (
-            areTemplateSettingsEqual(current, nextSettings) ? current : nextSettings
-          ));
+          setSavedTemplateSettings(nextSettings);
+          if (savingTemplateSettings) {
+            setTemplateSettings((current) => (
+              areTemplateSettingsEqual(current, nextSettings) ? current : nextSettings
+            ));
+          }
         }
       }
       return data;
@@ -602,6 +618,25 @@ export default function CertVaultDashboard() {
       return null;
     } finally {
       setParticipantCsvSaving(false);
+    }
+  }
+
+  async function handleConfirmTemplateSettings() {
+    if (!selectedEventId || !templateReady) return;
+
+    setRenderedTemplatePreviewError('');
+    setLiveTemplatePreviewActive(true);
+
+    try {
+      const data = await saveTemplateConfig({
+        template_settings: templateSettings,
+      });
+
+      if (!data?.success) {
+        setRenderedTemplatePreviewError(data?.error || 'Could not save template settings to Convex');
+      }
+    } catch (error) {
+      setRenderedTemplatePreviewError(error.message || 'Could not save template settings to Convex');
     }
   }
 
@@ -677,12 +712,11 @@ export default function CertVaultDashboard() {
     const timeout = setTimeout(() => {
       saveTemplateConfig({
         participant_csv: participantCsv,
-        template_settings: templateSettings,
       });
     }, 700);
 
     return () => clearTimeout(timeout);
-  }, [participantCsv, templateSettings, configLoaded, selectedEventId]);
+  }, [participantCsv, configLoaded, selectedEventId]);
 
   useEffect(() => {
     if (!configLoaded || !selectedEventId || !activeTemplateSource) {
@@ -706,7 +740,7 @@ export default function CertVaultDashboard() {
           body: JSON.stringify({
             eventId: selectedEventId,
             template: activeTemplateSource,
-            settings: templateSettings,
+            settings: savedTemplateSettings,
             name: 'Elon Musk',
             certificateId: 'CV-2026-SAMPLE',
           }),
@@ -735,7 +769,7 @@ export default function CertVaultDashboard() {
       cancelled = true;
       clearTimeout(timeout);
     };
-  }, [configLoaded, selectedEventId, activeTemplateSource, templateSettings, dragTarget]);
+  }, [configLoaded, selectedEventId, activeTemplateSource, savedTemplateSettings, dragTarget]);
 
   function handleParticipantCsvChange(e) {
     setParticipantCsv(e.target.value);
@@ -906,7 +940,7 @@ export default function CertVaultDashboard() {
     const x = snapPosition(clampUnit((clientX - rect.left) / rect.width), [0.2, 0.35, 0.5, 0.65, 0.8]);
     const y = snapPosition(clampUnit((clientY - rect.top) / rect.height), [0.15, 0.3, 0.45, 0.6, 0.75, 0.9]);
 
-    setTemplateSettings((current) => {
+    updateTemplateSettings((current) => {
       if (target === 'name') {
         return {
           ...current,
@@ -995,6 +1029,11 @@ export default function CertVaultDashboard() {
       setGenerateResult({ success: false, error: 'Upload a certificate template before generating certificates' });
       return;
     }
+    if (templateSettingsDirty) {
+      setGenerateResult({ success: false, error: 'Confirm template positions before generating certificates' });
+      setStep('template');
+      return;
+    }
 
     setGenerateLoading(true);
     setGenerateResult(null);
@@ -1017,7 +1056,7 @@ export default function CertVaultDashboard() {
           eventId: selectedEventId,
           recipients: parsedCsv.participants,
           template: activeTemplate || undefined,
-          settings: templateSettings,
+          settings: savedTemplateSettings,
         }),
       });
       const data = await res.json().catch(() => ({
@@ -1045,6 +1084,11 @@ export default function CertVaultDashboard() {
       setGenerateResult({ success: false, error: 'Upload or save a certificate template before regenerating PDFs' });
       return;
     }
+    if (templateSettingsDirty) {
+      setGenerateResult({ success: false, error: 'Confirm template positions before regenerating PDFs' });
+      setStep('template');
+      return;
+    }
 
     const activeTemplate = typeof templatePreviewUrl === 'string' && templatePreviewUrl.trim()
       ? templatePreviewUrl.trim()
@@ -1069,7 +1113,7 @@ export default function CertVaultDashboard() {
         body: JSON.stringify({
           eventId: selectedEventId,
           template: activeTemplate,
-          settings: templateSettings,
+          settings: savedTemplateSettings,
         }),
       });
       const data = await res.json().catch(() => ({
@@ -1604,6 +1648,22 @@ export default function CertVaultDashboard() {
                               >
                                 Down
                               </button>
+                              <button
+                                type="button"
+                                onClick={handleConfirmTemplateSettings}
+                                disabled={!templateSettingsDirty || templateSaving || !templateReady}
+                                className={`rounded-xl px-4 py-2 text-xs font-semibold transition ${
+                                  templateSettingsDirty
+                                    ? 'bg-[#7ef0bf] text-[#06110d] hover:bg-[#9ff7d0]'
+                                    : 'border border-white/10 bg-white/5 text-white/55'
+                                } disabled:cursor-not-allowed disabled:opacity-60`}
+                              >
+                                {templateSaving
+                                  ? 'Saving...'
+                                  : templateSettingsDirty
+                                    ? 'Confirm positions'
+                                    : 'Positions confirmed'}
+                              </button>
                             </div>
                           </div>
                         </div>
@@ -1632,8 +1692,7 @@ export default function CertVaultDashboard() {
                                 if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return;
                                 event.preventDefault();
                                 selectTemplateLayer('name');
-                                setLiveTemplatePreviewActive(true);
-                                setTemplateSettings((current) => ({
+                                updateTemplateSettings((current) => ({
                                   ...current,
                                   text_x: clampUnit(current.text_x + (event.key === 'ArrowLeft' ? -step : event.key === 'ArrowRight' ? step : 0)),
                                   text_y: clampUnit(current.text_y + (event.key === 'ArrowUp' ? -step : event.key === 'ArrowDown' ? step : 0)),
@@ -1680,8 +1739,7 @@ export default function CertVaultDashboard() {
                                 if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return;
                                 event.preventDefault();
                                 selectTemplateLayer('verify');
-                                setLiveTemplatePreviewActive(true);
-                                setTemplateSettings((current) => ({
+                                updateTemplateSettings((current) => ({
                                   ...current,
                                   verify_line_x: clampUnit(current.verify_line_x + (event.key === 'ArrowLeft' ? -step : event.key === 'ArrowRight' ? step : 0)),
                                   verify_line_y: clampUnit(current.verify_line_y + (event.key === 'ArrowUp' ? -step : event.key === 'ArrowDown' ? step : 0)),
@@ -1748,7 +1806,7 @@ export default function CertVaultDashboard() {
                                         value={templateSettings.font_family}
                                         onChange={(e) => {
                                           setShowTemplateOverlay(true);
-                                          setTemplateSettings((current) => ({ ...current, font_family: e.target.value }));
+                                          updateTemplateSettings((current) => ({ ...current, font_family: e.target.value }));
                                         }}
                                         className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-[var(--apple-accent)]"
                                       >
@@ -1768,7 +1826,7 @@ export default function CertVaultDashboard() {
                                           value={templateSettings.text_x}
                                           onChange={(e) => {
                                             setShowTemplateOverlay(true);
-                                            setTemplateSettings((current) => ({ ...current, text_x: Number(e.target.value) }));
+                                            updateTemplateSettings((current) => ({ ...current, text_x: Number(e.target.value) }));
                                           }}
                                           className="mt-2 w-full"
                                         />
@@ -1784,7 +1842,7 @@ export default function CertVaultDashboard() {
                                           value={templateSettings.text_y}
                                           onChange={(e) => {
                                             setShowTemplateOverlay(true);
-                                            setTemplateSettings((current) => ({ ...current, text_y: Number(e.target.value) }));
+                                            updateTemplateSettings((current) => ({ ...current, text_y: Number(e.target.value) }));
                                           }}
                                           className="mt-2 w-full"
                                         />
@@ -1802,7 +1860,7 @@ export default function CertVaultDashboard() {
                                           value={templateSettings.font_size}
                                           onChange={(e) => {
                                             setShowTemplateOverlay(true);
-                                            setTemplateSettings((current) => ({ ...current, font_size: Number(e.target.value) }));
+                                            updateTemplateSettings((current) => ({ ...current, font_size: Number(e.target.value) }));
                                           }}
                                           className="mt-2 w-full"
                                         />
@@ -1815,7 +1873,7 @@ export default function CertVaultDashboard() {
                                           value={templateSettings.font_color}
                                           onChange={(e) => {
                                             setShowTemplateOverlay(true);
-                                            setTemplateSettings((current) => ({ ...current, font_color: e.target.value }));
+                                            updateTemplateSettings((current) => ({ ...current, font_color: e.target.value }));
                                           }}
                                           className="mt-2 h-11 w-16 rounded-xl border border-white/10 bg-white/5 px-2 py-1"
                                         />
@@ -1830,7 +1888,7 @@ export default function CertVaultDashboard() {
                                         value={templateSettings.verify_line_text}
                                         onChange={(e) => {
                                           setShowTemplateOverlay(true);
-                                          setTemplateSettings((current) => ({ ...current, verify_line_text: e.target.value }));
+                                          updateTemplateSettings((current) => ({ ...current, verify_line_text: e.target.value }));
                                         }}
                                         className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none placeholder:text-white/35 focus:border-[var(--apple-accent)]"
                                       />
@@ -1841,7 +1899,7 @@ export default function CertVaultDashboard() {
                                         value={templateSettings.verify_line_font}
                                         onChange={(e) => {
                                           setShowTemplateOverlay(true);
-                                          setTemplateSettings((current) => ({ ...current, verify_line_font: e.target.value }));
+                                          updateTemplateSettings((current) => ({ ...current, verify_line_font: e.target.value }));
                                         }}
                                         className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-[var(--apple-accent)]"
                                       >
@@ -1861,7 +1919,7 @@ export default function CertVaultDashboard() {
                                           value={templateSettings.verify_line_x}
                                           onChange={(e) => {
                                             setShowTemplateOverlay(true);
-                                            setTemplateSettings((current) => ({ ...current, verify_line_x: Number(e.target.value) }));
+                                            updateTemplateSettings((current) => ({ ...current, verify_line_x: Number(e.target.value) }));
                                           }}
                                           className="mt-2 w-full"
                                         />
@@ -1877,7 +1935,7 @@ export default function CertVaultDashboard() {
                                           value={templateSettings.verify_line_y}
                                           onChange={(e) => {
                                             setShowTemplateOverlay(true);
-                                            setTemplateSettings((current) => ({ ...current, verify_line_y: Number(e.target.value) }));
+                                            updateTemplateSettings((current) => ({ ...current, verify_line_y: Number(e.target.value) }));
                                           }}
                                           className="mt-2 w-full"
                                         />
@@ -1895,7 +1953,7 @@ export default function CertVaultDashboard() {
                                           value={templateSettings.verify_line_size}
                                           onChange={(e) => {
                                             setShowTemplateOverlay(true);
-                                            setTemplateSettings((current) => ({ ...current, verify_line_size: Number(e.target.value) }));
+                                            updateTemplateSettings((current) => ({ ...current, verify_line_size: Number(e.target.value) }));
                                           }}
                                           className="mt-2 w-full"
                                         />
@@ -1908,7 +1966,7 @@ export default function CertVaultDashboard() {
                                           value={templateSettings.verify_line_color}
                                           onChange={(e) => {
                                             setShowTemplateOverlay(true);
-                                            setTemplateSettings((current) => ({ ...current, verify_line_color: e.target.value }));
+                                            updateTemplateSettings((current) => ({ ...current, verify_line_color: e.target.value }));
                                           }}
                                           className="mt-2 h-11 w-16 rounded-xl border border-white/10 bg-white/5 px-2 py-1"
                                         />
@@ -1928,7 +1986,7 @@ export default function CertVaultDashboard() {
                       <button
                         type="button"
                         onClick={() => setStep('generate')}
-                        disabled={!templateReady || !csvReady}
+                        disabled={!templateReady || !csvReady || templateSettingsDirty || templateSaving}
                         className="ventarc-dashboard-primary mt-4 rounded-xl bg-[var(--apple-accent)] px-5 py-3 font-semibold text-white disabled:opacity-50"
                       >
                         Continue to generate

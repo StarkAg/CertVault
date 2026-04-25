@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navigate, Routes, Route } from 'react-router-dom';
+import { Navigate, Routes, Route, useLocation } from 'react-router-dom';
 import {
   CertVaultHowItWorks,
   CertVaultForClubs,
@@ -35,9 +35,15 @@ export default function App() {
       <Route path="/login" element={<CertVaultLogin />} />
       <Route path="/dashboard" element={<CertVaultDashboard />} />
       <Route path="/verify" element={<CertVaultVerify />} />
+      <Route path="/certvault/vemy" element={<LegacyVerifyRedirect />} />
       <Route path="/certvault/verify" element={<CertVaultVerify />} />
       <Route path="/design" element={<Navigate to="/dashboard?step=template" replace />} />
       <Route path="/:eventSlug" element={<CertVaultDownload />} />
     </Routes>
   );
+}
+
+function LegacyVerifyRedirect() {
+  const location = useLocation();
+  return <Navigate to={`/certvault/verify${location.search || ''}`} replace />;
 }

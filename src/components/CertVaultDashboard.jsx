@@ -649,11 +649,9 @@ export default function CertVaultDashboard() {
     }
 
     let cancelled = false;
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000);
     setLoading(true);
 
-    fetchWithAuth(`${API_BASE}?action=me`, { signal: controller.signal })
+    fetchWithAuth(`${API_BASE}?action=me`)
       .then((res) => res.json())
       .then(async (data) => {
         if (cancelled) return;
@@ -674,7 +672,6 @@ export default function CertVaultDashboard() {
         navigate('/login?next=/dashboard', { replace: true });
       })
       .finally(() => {
-        clearTimeout(timeout);
         if (!cancelled) {
           setLoading(false);
         }
@@ -682,8 +679,6 @@ export default function CertVaultDashboard() {
 
     return () => {
       cancelled = true;
-      clearTimeout(timeout);
-      controller.abort();
     };
   }, [authResolved, token, navigate]);
 

@@ -50,6 +50,16 @@ app.use((req, res, next) => {
   next();
 });
 
+app.get('/healthz', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.status(200).json({
+    status: 'ok',
+    service: 'certvault',
+    uptime: Math.round(process.uptime()),
+    timestamp: new Date().toISOString(),
+  });
+});
+
 async function handleVercelRoute(handler, req, res) {
   const vercelReq = {
     method: req.method,

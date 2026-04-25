@@ -8,6 +8,7 @@ The **“CertVault server misconfigured. Missing environment variables”** mess
 - **Start command**: **`node server.js`** (or `npm start`).
 - If the site loads but CSS/JS fail with **"MIME type 'text/html'"** or **404/500 on `/assets/...`**, the front-end build did not run or `dist/` is missing in the deployed image. Check the **build logs** and confirm the build step runs and finishes without errors.
 - For custom domain **certvault.gradex.bond**: set **`PUBLIC_URL=https://certvault.gradex.bond`**.
+- To reduce free-tier cold starts, point an uptime monitor at **`https://certvault.gradex.bond/healthz`** every 5 minutes. App code cannot wake a sleeping Railway service by itself; it needs an external request or a Railway plan/config that does not sleep.
 
 ## Required variables (must set)
 

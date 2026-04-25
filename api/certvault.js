@@ -526,7 +526,10 @@ function createOrgTransporter(org, override = {}) {
     throw new Error('Configure the Gmail sender email and app password first');
   }
   return nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
+    requireTLS: true,
     auth: { user, pass },
     connectionTimeout: SMTP_CONNECTION_TIMEOUT_MS,
     greetingTimeout: SMTP_GREETING_TIMEOUT_MS,
@@ -1874,6 +1877,7 @@ export default async function handler(req, res) {
             email: cert.recipient_email,
           });
         } catch (error) {
+          console.error(`[CertVault] Email send failed ${cert.certificate_id} -> ${cert.recipient_email}:`, error.message);
           await updateEmailDeliveryCompat(convex, {
             certificate_id: cert.certificate_id,
             email_send_status: 'failed',

@@ -1433,7 +1433,7 @@ export default function CertVaultDashboard() {
               phase: event.phase === 'sent'
                 ? `Sent to ${event.email}`
                 : event.phase === 'failed'
-                  ? `Failed for ${event.email}`
+                  ? `Failed for ${event.email}${event.error ? `: ${event.error}` : ''}`
                   : event.phase === 'cooldown'
                     ? `Waiting ${Math.ceil(Number(event.delay_ms || 0) / 1000)}s to respect Gmail limits`
                     : event.rate_limited

@@ -223,7 +223,24 @@ function areTemplateSettingsEqual(a, b) {
 
 function getStoredClubToken() {
   if (typeof window === 'undefined') return '';
-  return localStorage.getItem('certvault_club_token') || '';
+  const storedToken = localStorage.getItem('certvault_club_token') || '';
+  if (!storedToken) return '';
+
+  try {
+    const decoded = JSON.parse(window.atob(storedToken));
+    if (decoded?.type !== 'certvault_club') {
+      localStorage.removeItem('certvault_club_token');
+      return '';
+    }
+    if (decoded.exp && decoded.exp < Date.now()) {
+      localStorage.removeItem('certvault_club_token');
+      return '';
+    }
+    return storedToken;
+  } catch {
+    localStorage.removeItem('certvault_club_token');
+    return '';
+  }
 }
 
 export default function CertVaultDashboard() {

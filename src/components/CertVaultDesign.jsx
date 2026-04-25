@@ -4,17 +4,27 @@
  */
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { buildCertVaultVerifyLine, normalizeCertVaultVerifyLine } from '../../lib/certvaultVerifyUrl.js';
 import CertVaultLayout from './CertVaultLayout';
 import { certVaultTheme as theme } from '../theme';
+import { compressTemplateImage } from '../utils/certvaultCompress';
 
 const DESIGN_STORAGE_KEY = 'certvault_design';
 const CLUB_TEMPLATES_KEY = 'certvault_club_templates';
 
-const DEFAULT_VERIFY_LINE = 'Verify this certificate at /certvault/verify?id={certificate_id}';
-
 const SNAP_THRESHOLD = 0.025;
 const ALIGN_THRESHOLD = 0.008;
 const GUIDE_POSITIONS = [0.25, 0.5, 0.75];
+
+function defaultVerifyLine() {
+  const baseUrl = typeof window === 'undefined' ? '' : window.location.origin;
+  return buildCertVaultVerifyLine(baseUrl);
+}
+
+function normalizeVerifyLineText(line) {
+  const baseUrl = typeof window === 'undefined' ? '' : window.location.origin;
+  return normalizeCertVaultVerifyLine(line, baseUrl);
+}
 
 function snapToGuides(raw, other, isDragging) {
   if (!isDragging) return { value: raw, guide: null };
@@ -79,8 +89,6 @@ const CERTIFICATE_FONTS = [
   { name: 'Space Grotesk', value: "'Space Grotesk', sans-serif" },
 ];
 
-import { compressTemplateImage } from '../utils/certvaultCompress';
-
 // Convert SVG data URL to PNG data URL (certgen expects raster)
 async function svgToPngDataUrl(svgDataUrl) {
   return new Promise((resolve, reject) => {
@@ -121,14 +129,14 @@ export default function CertVaultDesign() {
     cert_id_x: 0.5,
     cert_id_y: 0.85,
     cert_id_size: 24,
-    verify_line_text: DEFAULT_VERIFY_LINE,
+    verify_line_text: defaultVerifyLine(),
     verify_line_x: 0.5,
     verify_line_y: 0.92,
     verify_line_size: 12,
     verify_line_color: '#666666',
     verify_line_font: "'Inter', sans-serif",
   });
-  const [verifyLineText, setVerifyLineText] = useState(DEFAULT_VERIFY_LINE);
+  const [verifyLineText, setVerifyLineText] = useState(defaultVerifyLine());
   const [savedTemplates, setSavedTemplates] = useState([]);
   const [saveTemplateName, setSaveTemplateName] = useState('');
   const [showSaveTemplate, setShowSaveTemplate] = useState(false);
@@ -156,8 +164,9 @@ export default function CertVaultDesign() {
         const data = JSON.parse(saved);
         if (data.template) setTemplateImage(data.template);
         if (data.settings) {
-          setPdfSettings(prev => ({ ...prev, ...data.settings }));
-          if (data.settings.verify_line_text) setVerifyLineText(data.settings.verify_line_text);
+          const normalizedVerifyLine = normalizeVerifyLineText(data.settings.verify_line_text);
+          setPdfSettings(prev => ({ ...prev, ...data.settings, verify_line_text: normalizedVerifyLine }));
+          setVerifyLineText(normalizedVerifyLine);
         }
       }
       const stored = localStorage.getItem(CLUB_TEMPLATES_KEY);
@@ -175,9 +184,10 @@ export default function CertVaultDesign() {
   }, []);
 
   const saveDesign = useCallback(() => {
+    const normalizedVerifyLine = normalizeVerifyLineText(verifyLineText);
     const data = {
       template: templateImage,
-      settings: { ...pdfSettings, verify_line_text: verifyLineText },
+      settings: { ...pdfSettings, verify_line_text: normalizedVerifyLine },
     };
     try {
       localStorage.setItem(DESIGN_STORAGE_KEY, JSON.stringify(data));
@@ -455,7 +465,7 @@ export default function CertVaultDesign() {
                 type="text"
                 value={verifyLineText}
                 onChange={(e) => setVerifyLineText(e.target.value)}
-                placeholder="Verify this certificate at /certvault/verify?id={certificate_id}"
+                placeholder={defaultVerifyLine()}
                 style={styles.verifyInput}
               />
             </div>
@@ -583,7 +593,7 @@ export default function CertVaultDesign() {
                     fontFamily: pdfSettings.verify_line_font || "'Inter', sans-serif",
                   }}
                 >
-                  {(verifyLineText || DEFAULT_VERIFY_LINE).replace(/\{certificate_id\}|\{id\}/g, 'CV-2025-A1B2C3')}
+                  {normalizeVerifyLineText(verifyLineText || defaultVerifyLine()).replace(/\{certificate_id\}|\{id\}/g, 'CV-2025-A1B2C3')}
                 </div>
                 <div
                   style={{

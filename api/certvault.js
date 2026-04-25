@@ -28,6 +28,7 @@
 
 import { getConvexClient, isConvexConfigured, docToApi, docsToApi, api } from '../lib/convex.js';
 import { uploadCertificate, deleteCertificate, uploadTemplateImage, isCloudinaryConfigured } from '../lib/cloudinary.js';
+import { buildCertVaultVerifyLine, normalizeCertVaultVerifyLine } from '../lib/certvaultVerifyUrl.js';
 import { writeFile, unlink } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
@@ -381,15 +382,12 @@ function toStoredWebAuthnCredential(passkey) {
 }
 
 function getVerifyLineText(req) {
-  return `Verify this certificate at ${getBaseUrl(req)}/certvault/verify?id={certificate_id}`;
+  return buildCertVaultVerifyLine(getBaseUrl(req));
 }
 
 function normalizeTemplateSettings(settings, req) {
   const safeSettings = settings && typeof settings === 'object' ? { ...settings } : {};
-  const currentVerifyLine = typeof safeSettings.verify_line_text === 'string' ? safeSettings.verify_line_text.trim() : '';
-  if (!currentVerifyLine || currentVerifyLine.includes('gradex.bond/certvault/verify')) {
-    safeSettings.verify_line_text = getVerifyLineText(req);
-  }
+  safeSettings.verify_line_text = normalizeCertVaultVerifyLine(safeSettings.verify_line_text, getBaseUrl(req));
   return safeSettings;
 }
 
@@ -1591,6 +1589,8 @@ export default async function handler(req, res) {
       }
 
       const recipients = needPdf.map((c) => ({ name: c.recipient_name, certificate_id: c.certificate_id }));
+      const resolvedTemplate = await resolveTemplateSource(template, event);
+      const resolvedSettings = normalizeTemplateSettings(settings || event.template_settings || {}, req);
       const CHUNK_SIZE = 20;
       const pdfUrlMap = new Map();
       const publicIdMap = new Map();
@@ -1599,7 +1599,7 @@ export default async function handler(req, res) {
       try {
         for (let i = 0; i < recipients.length; i += CHUNK_SIZE) {
           const chunk = recipients.slice(i, i + CHUNK_SIZE);
-          const pdfResult = await generateCertificateBatch(template, chunk, settings || {}, cloudinaryFolder);
+          const pdfResult = await generateCertificateBatch(resolvedTemplate, chunk, resolvedSettings, cloudinaryFolder);
           (pdfResult.results || []).forEach((r) => {
             if (r.pdf_url) pdfUrlMap.set(r.certificate_id, r.pdf_url);
             if (r.public_id) publicIdMap.set(r.certificate_id, r.public_id);
@@ -1664,6 +1664,8 @@ export default async function handler(req, res) {
       }
 
       const recipients = validCerts.map((c) => ({ name: c.recipient_name, certificate_id: c.certificate_id }));
+      const resolvedTemplate = await resolveTemplateSource(template, event);
+      const resolvedSettings = normalizeTemplateSettings(settings || event.template_settings || {}, req);
       const CHUNK_SIZE = 20;
       const pdfUrlMap = new Map();
       const publicIdMap = new Map();
@@ -1672,7 +1674,7 @@ export default async function handler(req, res) {
       try {
         for (let i = 0; i < recipients.length; i += CHUNK_SIZE) {
           const chunk = recipients.slice(i, i + CHUNK_SIZE);
-          const pdfResult = await generateCertificateBatch(template, chunk, settings || {}, cloudinaryFolder);
+          const pdfResult = await generateCertificateBatch(resolvedTemplate, chunk, resolvedSettings, cloudinaryFolder);
           (pdfResult.results || []).forEach((r) => {
             if (r.pdf_url) pdfUrlMap.set(r.certificate_id, r.pdf_url);
             if (r.public_id) publicIdMap.set(r.certificate_id, r.public_id);

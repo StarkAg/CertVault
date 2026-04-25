@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import * as XLSX from 'xlsx';
+import { buildCertVaultVerifyLine, normalizeCertVaultVerifyLine } from '../../lib/certvaultVerifyUrl.js';
 import { compressTemplateImage } from '../utils/certvaultCompress';
 import { pdfDownloadUrl } from '../utils/certvaultPdfUrl';
 import VentarcSceneBackground from './VentarcSceneBackground';
@@ -19,10 +20,15 @@ const CERTIFICATE_FONTS = [
 ];
 
 function defaultVerifyLine() {
-  if (typeof window === 'undefined') {
-    return 'Verify this certificate at /certvault/verify?id={certificate_id}';
-  }
-  return `Verify this certificate at ${window.location.origin}/certvault/verify?id={certificate_id}`;
+  const baseUrl = typeof window === 'undefined' ? '' : window.location.origin;
+  return buildCertVaultVerifyLine(baseUrl);
+}
+
+function normalizeClientTemplateSettings(settings) {
+  const safeSettings = settings && typeof settings === 'object' ? { ...settings } : {};
+  const baseUrl = typeof window === 'undefined' ? '' : window.location.origin;
+  safeSettings.verify_line_text = normalizeCertVaultVerifyLine(safeSettings.verify_line_text, baseUrl);
+  return safeSettings;
 }
 
 function defaultTemplateSettings() {
@@ -178,6 +184,82 @@ function clampUnit(value) {
   return Math.max(0, Math.min(1, value));
 }
 
+function normalizePreviewFontSize(rawSize, width, height, role) {
+  const defaults = {
+    name: 60,
+    verify: 14,
+    certificate_id: 20,
+  };
+  const minimums = {
+    name: Math.max(48, Math.min(76, Math.round(height * 0.08))),
+    verify: Math.max(12, Math.min(18, Math.round(height * 0.022))),
+    certificate_id: Math.max(16, Math.min(24, Math.round(height * 0.03))),
+  };
+  const maximums = {
+    name: Math.max(minimums.name, Math.round(height * 0.18)),
+    verify: Math.max(minimums.verify, Math.round(height * 0.045)),
+    certificate_id: Math.max(minimums.certificate_id, Math.round(height * 0.06)),
+  };
+
+  let size = Number(rawSize ?? defaults[role]);
+  if (!Number.isFinite(size)) size = defaults[role];
+  if (size > 0 && size <= 1) size *= height;
+
+  return Math.round(Math.max(minimums[role], Math.min(size, maximums[role])));
+}
+
+function buildCanvasFont(fontSize, fontFamily, fontWeight = 400) {
+  const family = fontFamily || 'Georgia, serif';
+  return `${fontWeight} ${Math.max(1, Math.round(fontSize))}px ${family}`;
+}
+
+function fitPreviewText(drawConfig) {
+  const {
+    text,
+    fontFamily,
+    fontWeight,
+    startSize,
+    minSize,
+    maxWidth,
+  } = drawConfig;
+
+  if (typeof document === 'undefined') {
+    return { fontSize: startSize, width: 0, height: startSize };
+  }
+
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('2d');
+  if (!context) {
+    return { fontSize: startSize, width: 0, height: startSize };
+  }
+
+  let fittedSize = Math.max(minSize, Math.round(startSize));
+  const floor = Math.min(Math.round(minSize), fittedSize);
+
+  while (fittedSize > floor) {
+    context.font = buildCanvasFont(fittedSize, fontFamily, fontWeight);
+    const metrics = context.measureText(text);
+    if (metrics.width <= maxWidth) {
+      const height = (metrics.actualBoundingBoxAscent || fittedSize * 0.8) + (metrics.actualBoundingBoxDescent || fittedSize * 0.2);
+      return {
+        fontSize: fittedSize,
+        width: metrics.width,
+        height,
+      };
+    }
+    fittedSize -= 2;
+  }
+
+  context.font = buildCanvasFont(floor, fontFamily, fontWeight);
+  const metrics = context.measureText(text);
+  const height = (metrics.actualBoundingBoxAscent || floor * 0.8) + (metrics.actualBoundingBoxDescent || floor * 0.2);
+  return {
+    fontSize: floor,
+    width: metrics.width,
+    height,
+  };
+}
+
 function snapPosition(raw, targets, threshold = 0.025) {
   for (const target of targets) {
     if (Math.abs(raw - target) < threshold) return target;
@@ -274,7 +356,12 @@ export default function CertVaultDashboard() {
   const [selectedTemplateName, setSelectedTemplateName] = useState('');
   const [templateSaving, setTemplateSaving] = useState(false);
   const [isTemplateDropActive, setIsTemplateDropActive] = useState(false);
-  const [previewMetrics, setPreviewMetrics] = useState({ naturalWidth: 0, renderedWidth: 0 });
+  const [previewMetrics, setPreviewMetrics] = useState({
+    naturalWidth: 0,
+    naturalHeight: 0,
+    renderedWidth: 0,
+    renderedHeight: 0,
+  });
   const [pendingTemplateDrag, setPendingTemplateDrag] = useState(null);
   const [dragTarget, setDragTarget] = useState('');
   const [liveTemplatePreviewActive, setLiveTemplatePreviewActive] = useState(false);
@@ -358,11 +445,54 @@ export default function CertVaultDashboard() {
   const previewScale = previewMetrics.naturalWidth && previewMetrics.renderedWidth
     ? previewMetrics.renderedWidth / previewMetrics.naturalWidth
     : 1;
+  const liveNameMetrics = useMemo(() => {
+    if (!previewMetrics.naturalWidth || !previewMetrics.naturalHeight) return null;
+    return fitPreviewText({
+      text: 'Elon Musk',
+      fontFamily: templateSettings.font_family || 'Georgia, serif',
+      fontWeight: 700,
+      startSize: normalizePreviewFontSize(
+        templateSettings.font_size,
+        previewMetrics.naturalWidth,
+        previewMetrics.naturalHeight,
+        'name'
+      ),
+      minSize: Math.max(32, Math.round(previewMetrics.naturalHeight * 0.045)),
+      maxWidth: previewMetrics.naturalWidth * 0.78,
+    });
+  }, [
+    previewMetrics.naturalHeight,
+    previewMetrics.naturalWidth,
+    templateSettings.font_family,
+    templateSettings.font_size,
+  ]);
+  const liveVerifyMetrics = useMemo(() => {
+    if (!previewMetrics.naturalWidth || !previewMetrics.naturalHeight) return null;
+    return fitPreviewText({
+      text: templateSettings.verify_line_text.replace('{certificate_id}', 'CV-2026-SAMPLE').replace('{id}', 'CV-2026-SAMPLE'),
+      fontFamily: templateSettings.verify_line_font || "'Inter', sans-serif",
+      fontWeight: 400,
+      startSize: normalizePreviewFontSize(
+        templateSettings.verify_line_size,
+        previewMetrics.naturalWidth,
+        previewMetrics.naturalHeight,
+        'verify'
+      ),
+      minSize: Math.max(10, Math.round(previewMetrics.naturalHeight * 0.016)),
+      maxWidth: previewMetrics.naturalWidth * 0.82,
+    });
+  }, [
+    previewMetrics.naturalHeight,
+    previewMetrics.naturalWidth,
+    templateSettings.verify_line_font,
+    templateSettings.verify_line_size,
+    templateSettings.verify_line_text,
+  ]);
   const activeTemplateSource = typeof templatePreviewUrl === 'string' && templatePreviewUrl.trim()
     ? templatePreviewUrl.trim()
     : (typeof templateAssetUrl === 'string' ? templateAssetUrl.trim() : '');
   const usingRenderedTemplatePreview = Boolean(renderedTemplatePreviewUrl);
-  const showLiveTemplateText = liveTemplatePreviewActive || templateSettingsDirty || renderedTemplatePreviewLoading || !usingRenderedTemplatePreview;
+  const showLiveTemplateText = liveTemplatePreviewActive || renderedTemplatePreviewLoading || !usingRenderedTemplatePreview;
   const templatePreviewImageUrl = showLiveTemplateText
     ? activeTemplateSource
     : renderedTemplatePreviewUrl || activeTemplateSource;
@@ -525,7 +655,7 @@ export default function CertVaultDashboard() {
     skipNextParticipantAutosaveRef.current = false;
     const settings = {
       ...defaultTemplateSettings(),
-      ...(data.config?.template_settings || {}),
+      ...normalizeClientTemplateSettings(data.config?.template_settings || {}),
     };
     setParticipantCsv(data.config?.participant_csv || '');
     setParticipantCsvSaveError('');
@@ -565,7 +695,9 @@ export default function CertVaultDashboard() {
         body: JSON.stringify({
           eventId: selectedEventId,
           participant_csv: payload.participant_csv !== undefined ? payload.participant_csv : participantCsv,
-          template_settings: savingTemplateSettings ? payload.template_settings : savedTemplateSettings,
+          template_settings: normalizeClientTemplateSettings(
+            savingTemplateSettings ? payload.template_settings : savedTemplateSettings
+          ),
           ...(payload.template_data_url ? { template_data_url: payload.template_data_url } : {}),
         }),
       });
@@ -576,7 +708,7 @@ export default function CertVaultDashboard() {
         if (data.config?.template_settings) {
           const nextSettings = {
             ...defaultTemplateSettings(),
-            ...data.config.template_settings,
+            ...normalizeClientTemplateSettings(data.config.template_settings),
           };
           setSavedTemplateSettings(nextSettings);
           if (savingTemplateSettings) {
@@ -735,7 +867,7 @@ export default function CertVaultDashboard() {
           body: JSON.stringify({
             eventId: selectedEventId,
             template: activeTemplateSource,
-            settings: savedTemplateSettings,
+            settings: templateSettings,
             name: 'Elon Musk',
             certificateId: 'CV-2026-SAMPLE',
           }),
@@ -764,7 +896,7 @@ export default function CertVaultDashboard() {
       cancelled = true;
       clearTimeout(timeout);
     };
-  }, [configLoaded, selectedEventId, activeTemplateSource, savedTemplateSettings, dragTarget]);
+  }, [configLoaded, selectedEventId, activeTemplateSource, templateSettings, dragTarget]);
 
   function handleParticipantCsvChange(e) {
     setParticipantCsv(e.target.value);
@@ -910,7 +1042,9 @@ export default function CertVaultDashboard() {
     if (!image) return;
     setPreviewMetrics({
       naturalWidth: image.naturalWidth || 0,
+      naturalHeight: image.naturalHeight || 0,
       renderedWidth: image.clientWidth || 0,
+      renderedHeight: image.clientHeight || 0,
     });
   }
 
@@ -1706,11 +1840,13 @@ export default function CertVaultDashboard() {
                                 touchAction: 'none',
                                 ...(!showLiveTemplateText
                                   ? {
-                                      width: `${Math.max(templateSettings.font_size * previewScale * 6.2, 150)}px`,
-                                      height: `${Math.max(templateSettings.font_size * previewScale * 1.55, 44)}px`,
+                                      width: `${Math.max((liveNameMetrics?.width || 0) * previewScale + 40, 150)}px`,
+                                      height: `${Math.max((liveNameMetrics?.height || 0) * previewScale + 24, 44)}px`,
                                     }
                                   : {
-                                      fontSize: `${Math.max(templateSettings.font_size * previewScale, 10)}px`,
+                                      width: `${Math.max((liveNameMetrics?.width || 0) * previewScale + 24, 140)}px`,
+                                      minHeight: `${Math.max((liveNameMetrics?.height || 0) * previewScale + 12, 36)}px`,
+                                      fontSize: `${Math.max((liveNameMetrics?.fontSize || templateSettings.font_size) * previewScale, 10)}px`,
                                       color: templateSettings.font_color,
                                       fontFamily: templateSettings.font_family || 'Georgia, serif',
                                       fontWeight: 700,
@@ -1753,11 +1889,13 @@ export default function CertVaultDashboard() {
                                 touchAction: 'none',
                                 ...(!showLiveTemplateText
                                   ? {
-                                      width: `${Math.max(templateSettings.verify_line_size * previewScale * 64, 240)}px`,
-                                      height: `${Math.max(templateSettings.verify_line_size * previewScale * 2.8, 32)}px`,
+                                      width: `${Math.max((liveVerifyMetrics?.width || 0) * previewScale + 32, 240)}px`,
+                                      height: `${Math.max((liveVerifyMetrics?.height || 0) * previewScale + 18, 32)}px`,
                                     }
                                   : {
-                                      fontSize: `${Math.max(templateSettings.verify_line_size * previewScale, 8)}px`,
+                                      width: `${Math.max((liveVerifyMetrics?.width || 0) * previewScale + 20, 220)}px`,
+                                      minHeight: `${Math.max((liveVerifyMetrics?.height || 0) * previewScale + 10, 26)}px`,
+                                      fontSize: `${Math.max((liveVerifyMetrics?.fontSize || templateSettings.verify_line_size) * previewScale, 8)}px`,
                                       color: templateSettings.verify_line_color,
                                       fontFamily: templateSettings.verify_line_font || "'Inter', sans-serif",
                                       fontWeight: 400,

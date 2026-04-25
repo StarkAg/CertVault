@@ -1,0 +1,21 @@
+name: Keep CertVault Warm
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping health endpoint
+        run: |
+          curl --fail --show-error --silent \
+            --max-time 30 \
+            --retry 2 \
+            --retry-delay 10 \
+            https://certvault.gradex.bond/healthz

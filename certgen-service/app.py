@@ -68,7 +68,7 @@ os.makedirs(TEMPLATES_DIR, exist_ok=True)
 os.makedirs(FONTS_DIR, exist_ok=True)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-SERVICE_VERSION = os.getenv("CERTGEN_VERSION", "2026-04-25-font-hardening")
+SERVICE_VERSION = os.getenv("CERTGEN_VERSION", "2026-04-26-download-pdf")
 COMMON_FONT_DIRS = [
     FONTS_DIR,
     "/usr/share/fonts",

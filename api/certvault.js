@@ -634,55 +634,101 @@ function pdfDownloadUrlForEmail(url, req) {
   return url;
 }
 
+function buildCertificateEmailHtml({ recipientName, eventName, orgName, certificateId, verifyUrl, previewUrl }) {
+  const safeRecipient = escapeHtml(recipientName);
+  const safeEvent = escapeHtml(eventName);
+  const safeOrg = escapeHtml(orgName);
+  const safeCertId = escapeHtml(certificateId);
+  return `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Your Certificate</title></head>
+<body style="margin:0;padding:0;background:#f0f4f8;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f4f8;padding:40px 0;">
+  <tr><td align="center">
+    <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+
+      <!-- Header -->
+      <tr><td style="background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);border-radius:20px 20px 0 0;padding:40px 40px 36px;text-align:center;">
+        <div style="display:inline-block;background:rgba(143,184,255,0.15);border:1px solid rgba(143,184,255,0.3);border-radius:100px;padding:6px 16px;margin-bottom:20px;">
+          <span style="font-size:11px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:#8fb8ff;">CertVault &nbsp;·&nbsp; GradeX</span>
+        </div>
+        <h1 style="margin:0;font-size:30px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;line-height:1.2;">🎓 Congratulations!</h1>
+        <p style="margin:10px 0 0;font-size:16px;color:rgba(255,255,255,0.7);font-weight:400;">Your certificate has been issued</p>
+      </td></tr>
+
+      <!-- Body -->
+      <tr><td style="background:#ffffff;padding:40px;">
+        <p style="margin:0 0 8px;font-size:18px;font-weight:700;color:#0f172a;">Hi ${safeRecipient},</p>
+        <p style="margin:0 0 28px;font-size:15px;color:#475569;line-height:1.7;">
+          Your certificate for <strong style="color:#0f172a;">${safeEvent}</strong> has been officially issued by <strong style="color:#0f172a;">${safeOrg}</strong>. Please find your PDF certificate attached to this email.
+        </p>
+
+        <!-- Certificate ID card -->
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+          <tr><td style="background:linear-gradient(135deg,#f8faff 0%,#eff4ff 100%);border:1.5px solid #dbeafe;border-radius:16px;padding:24px 28px;">
+            <p style="margin:0 0 6px;font-size:11px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:#6b7280;">Certificate ID</p>
+            <p style="margin:0 0 16px;font-size:22px;font-weight:800;color:#1e40af;letter-spacing:0.03em;">${safeCertId}</p>
+            <table cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="background:#2563eb;border-radius:10px;padding:0;">
+                  <a href="${verifyUrl}" style="display:inline-block;padding:11px 22px;font-size:13px;font-weight:700;color:#ffffff;text-decoration:none;letter-spacing:0.02em;">✓ Verify Certificate</a>
+                </td>
+                ${previewUrl ? `<td style="padding-left:10px;"><a href="${previewUrl}" style="display:inline-block;padding:11px 22px;font-size:13px;font-weight:700;color:#2563eb;text-decoration:none;border:1.5px solid #bfdbfe;border-radius:10px;background:#fff;">View PDF ↗</a></td>` : ''}
+              </tr>
+            </table>
+          </td></tr>
+        </table>
+
+        <!-- Info note -->
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+          <tr><td style="background:#f8fafc;border-left:4px solid #2563eb;border-radius:0 8px 8px 0;padding:14px 18px;">
+            <p style="margin:0;font-size:13px;color:#475569;line-height:1.6;">
+              📎 <strong>Your certificate PDF is attached</strong> to this email. You can also verify its authenticity anytime using the Certificate ID above.
+            </p>
+          </td></tr>
+        </table>
+      </td></tr>
+
+      <!-- Footer -->
+      <tr><td style="background:#f8fafc;border-top:1px solid #e2e8f0;border-radius:0 0 20px 20px;padding:24px 40px;text-align:center;">
+        <p style="margin:0 0 4px;font-size:13px;font-weight:700;color:#334155;">CertVault &nbsp;·&nbsp; a GradeX product</p>
+        <p style="margin:0;font-size:12px;color:#94a3b8;">Issued by ${safeOrg} &nbsp;·&nbsp; Powered by CertVault</p>
+      </td></tr>
+
+    </table>
+  </td></tr>
+</table>
+</body></html>`;
+}
+
+function buildCertificateEmailText({ recipientName, eventName, orgName, certificateId, verifyUrl }) {
+  return `Hi ${recipientName},
+
+Congratulations! Your certificate for ${eventName} has been issued by ${orgName}.
+
+Certificate ID: ${certificateId}
+Verify online: ${verifyUrl}
+
+Your PDF certificate is attached to this email.
+
+CertVault · a GradeX product
+Issued by ${orgName}`;
+}
+
 async function sendCertificateEmail({ transporter, org, event, cert, req, pdfBuffer: prefetchedBuffer }) {
   const fromAddress = String(org.mailer_email || '').trim();
   const fromName = String(org.mailer_from_name || org.name || 'CertVault').trim();
   const recipientEmail = String(cert.recipient_email || '').trim();
   const verifyUrl = `${getBaseUrl(req)}/certvault/verify?id=${encodeURIComponent(cert.certificate_id)}`;
+  const previewUrl = pdfDownloadUrlForEmail(cert.pdf_url, req);
   console.log(`[CertVault] Email send start ${cert.certificate_id} -> ${recipientEmail}`);
   const pdfBuffer = prefetchedBuffer || await fetchPdfBufferForEmail(cert.pdf_url);
-  const brandLine = 'CertVault, a GradeX product';
-  const issuedByLine = `Issued by ${org.name} through ${brandLine}`;
-  const previewUrl = pdfDownloadUrlForEmail(cert.pdf_url, req);
   const info = await transporter.sendMail({
     from: `"${fromName}" <${fromAddress}>`,
     to: recipientEmail,
-    subject: `${event.name} Certificate for ${cert.recipient_name}`,
-    text: `Hi ${cert.recipient_name},
-
-Your certificate for ${event.name} is attached to this email as a PDF.
-
-Certificate ID: ${cert.certificate_id}
-
-Verify online: ${verifyUrl}
-
-${brandLine}
-
-${issuedByLine}`,
-    html: `
-      <div style="margin:0;padding:0;background:#f3f6fb;font-family:Arial,Helvetica,sans-serif;color:#111827;">
-        <div style="max-width:640px;margin:0 auto;padding:32px 18px;">
-          <div style="background:#05070b;border-radius:22px 22px 0 0;padding:28px 30px;color:#ffffff;">
-            <div style="font-size:12px;letter-spacing:0.22em;text-transform:uppercase;color:#8fb8ff;font-weight:700;">${brandLine}</div>
-            <h1 style="margin:12px 0 0;font-size:28px;line-height:1.15;">Your certificate is ready</h1>
-          </div>
-          <div style="background:#ffffff;border:1px solid #e5e7eb;border-top:0;border-radius:0 0 22px 22px;padding:30px;">
-            <p style="margin:0 0 16px;font-size:16px;line-height:1.6;">Hi <strong>${escapeHtml(cert.recipient_name)}</strong>,</p>
-            <p style="margin:0 0 22px;font-size:16px;line-height:1.6;">Your certificate for <strong>${escapeHtml(event.name)}</strong> has been issued by <strong>${escapeHtml(org.name)}</strong>. The PDF certificate is attached to this email.</p>
-            <div style="border:1px solid #e5e7eb;border-radius:16px;padding:18px;margin:0 0 24px;background:#f8fafc;">
-              <div style="font-size:12px;letter-spacing:0.16em;text-transform:uppercase;color:#64748b;font-weight:700;margin-bottom:8px;">Certificate ID</div>
-              <div style="font-size:20px;font-weight:800;color:#0f172a;">${escapeHtml(cert.certificate_id)}</div>
-            </div>
-            <div style="margin:0 0 24px;">
-              <a href="${verifyUrl}" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;border-radius:12px;padding:13px 18px;font-size:14px;font-weight:800;">Verify Certificate</a>
-              <a href="${previewUrl}" style="display:inline-block;margin-left:10px;color:#2563eb;text-decoration:none;font-size:14px;font-weight:800;">View PDF</a>
-            </div>
-            <p style="margin:0 0 8px;color:#111827;font-size:14px;font-weight:700;line-height:1.6;">${escapeHtml(brandLine)}</p>
-            <p style="margin:0;color:#64748b;font-size:13px;line-height:1.6;">${escapeHtml(issuedByLine)}</p>
-          </div>
-        </div>
-      </div>
-    `,
+    subject: `Your ${event.name} Certificate is Here 🎓`,
+    text: buildCertificateEmailText({ recipientName: cert.recipient_name, eventName: event.name, orgName: org.name, certificateId: cert.certificate_id, verifyUrl }),
+    html: buildCertificateEmailHtml({ recipientName: cert.recipient_name, eventName: event.name, orgName: org.name, certificateId: cert.certificate_id, verifyUrl, previewUrl }),
     attachments: [
       {
         filename: `${cert.certificate_id}.pdf`,
@@ -704,8 +750,6 @@ async function sendCertificateEmailWithResend({ org, event, cert, req, pdfBuffer
 
   const verifyUrl = `${getBaseUrl(req)}/certvault/verify?id=${encodeURIComponent(cert.certificate_id)}`;
   const pdfBuffer = prefetchedBuffer || await fetchPdfBufferForEmail(cert.pdf_url);
-  const brandLine = 'CertVault, a GradeX product';
-  const issuedByLine = `Issued by ${org.name} through ${brandLine}`;
   console.log(`[CertVault] Email send start ${cert.certificate_id} -> ${recipientEmail}`);
 
   const controller = new AbortController();
@@ -722,18 +766,9 @@ async function sendCertificateEmailWithResend({ org, event, cert, req, pdfBuffer
       body: JSON.stringify({
         from: `${fromName} <${fromAddress}>`,
         to: [recipientEmail],
-        subject: `${event.name} Certificate for ${cert.recipient_name}`,
-        html: `
-          <div style="font-family:Arial,sans-serif;color:#111827;line-height:1.6;">
-            <p style="font-size:12px;letter-spacing:0.18em;text-transform:uppercase;color:#2563eb;font-weight:700;">${brandLine}</p>
-            <p>Hi ${escapeHtml(cert.recipient_name)},</p>
-            <p>Your certificate for <strong>${escapeHtml(event.name)}</strong> is attached as a PDF.</p>
-            <p>Certificate ID: <strong>${escapeHtml(cert.certificate_id)}</strong></p>
-            <p><a href="${verifyUrl}">Verify Certificate</a></p>
-            <p><strong>${brandLine}</strong><br>${issuedByLine}</p>
-          </div>
-        `,
-        text: `Hi ${cert.recipient_name},\n\nYour certificate for ${event.name} is attached.\n\nCertificate ID: ${cert.certificate_id}\nVerify: ${verifyUrl}\n\n${brandLine}\n${issuedByLine}`,
+        subject: `Your ${event.name} Certificate is Here 🎓`,
+        html: buildCertificateEmailHtml({ recipientName: cert.recipient_name, eventName: event.name, orgName: org.name, certificateId: cert.certificate_id, verifyUrl }),
+        text: buildCertificateEmailText({ recipientName: cert.recipient_name, eventName: event.name, orgName: org.name, certificateId: cert.certificate_id, verifyUrl }),
         attachments: [
           {
             filename: `${cert.certificate_id}.pdf`,
@@ -768,8 +803,6 @@ async function sendCertificateEmailWithBrevo({ org, event, cert, req, pdfBuffer:
 
   const verifyUrl = `${getBaseUrl(req)}/certvault/verify?id=${encodeURIComponent(cert.certificate_id)}`;
   const pdfBuffer = prefetchedBuffer || await fetchPdfBufferForEmail(cert.pdf_url);
-  const brandLine = 'CertVault, a GradeX product';
-  const issuedByLine = `Issued by ${org.name} through ${brandLine}`;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), BREVO_SEND_TIMEOUT_MS);
   console.log(`[CertVault] Email send start ${cert.certificate_id} -> ${recipientEmail}`);
@@ -786,29 +819,9 @@ async function sendCertificateEmailWithBrevo({ org, event, cert, req, pdfBuffer:
       body: JSON.stringify({
         sender: { name: fromName, email: fromAddress },
         to: [{ email: recipientEmail, name: cert.recipient_name }],
-        subject: `${event.name} Certificate for ${cert.recipient_name}`,
-        textContent: `Hi ${cert.recipient_name},
-
-Your certificate for ${event.name} is attached to this email as a PDF.
-
-Certificate ID: ${cert.certificate_id}
-
-Verify online: ${verifyUrl}
-
-${brandLine}
-
-${issuedByLine}`,
-      htmlContent: `
-        <div style="font-family: Arial, sans-serif; color: #111827; line-height: 1.6;">
-          <p style="margin:0 0 12px; font-size:12px; letter-spacing:0.18em; text-transform:uppercase; color:#2563eb; font-weight:700;">${brandLine}</p>
-          <p>Hi ${cert.recipient_name},</p>
-          <p>Your certificate for <strong>${event.name}</strong> is attached to this email as a PDF.</p>
-          <p>Certificate ID: <strong>${cert.certificate_id}</strong></p>
-          <p>Verify online: <a href="${verifyUrl}">${verifyUrl}</a></p>
-          <p><strong>${brandLine}</strong></p>
-          <p>${issuedByLine}</p>
-        </div>
-      `,
+        subject: `Your ${event.name} Certificate is Here 🎓`,
+        textContent: buildCertificateEmailText({ recipientName: cert.recipient_name, eventName: event.name, orgName: org.name, certificateId: cert.certificate_id, verifyUrl }),
+        htmlContent: buildCertificateEmailHtml({ recipientName: cert.recipient_name, eventName: event.name, orgName: org.name, certificateId: cert.certificate_id, verifyUrl }),
       attachment: [
         {
           name: `${cert.certificate_id}.pdf`,

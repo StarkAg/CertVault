@@ -27,7 +27,7 @@
  */
 
 import { getConvexClient, isConvexConfigured, docToApi, docsToApi, api } from '../lib/convex.js';
-import { uploadCertificate, deleteCertificate, uploadTemplateImage, isCloudinaryConfigured } from '../lib/cloudinary.js';
+import { uploadCertificate, deleteCertificate, uploadTemplateImage, isCloudinaryConfigured, getSignedCertificateUrl } from '../lib/cloudinary.js';
 import { buildCertVaultVerifyLine, normalizeCertVaultVerifyLine } from '../lib/certvaultVerifyUrl.js';
 import { writeFile, unlink } from 'fs/promises';
 import { join } from 'path';
@@ -560,6 +560,32 @@ async function fetchPdfBuffer(url) {
   }
 }
 
+function cloudinaryPublicIdFromUrl(url) {
+  try {
+    const u = new URL(url);
+    // URL pattern: /res.cloudinary.com/<cloud>/raw/upload/[v<version>/]<public_id>
+    const match = u.pathname.match(/\/raw\/upload\/(?:v\d+\/)?(.+)$/);
+    return match ? match[1] : null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchPdfBufferForEmail(pdfUrl) {
+  if (isCloudinaryConfigured() && pdfUrl && pdfUrl.includes('res.cloudinary.com')) {
+    const publicId = cloudinaryPublicIdFromUrl(pdfUrl);
+    if (publicId) {
+      try {
+        const signedUrl = getSignedCertificateUrl(publicId);
+        return await fetchPdfBuffer(signedUrl);
+      } catch (err) {
+        console.warn('[CertVault] Signed URL fetch failed, falling back to direct URL:', err.message);
+      }
+    }
+  }
+  return await fetchPdfBuffer(pdfUrl);
+}
+
 function escapeHtml(value) {
   return String(value ?? '')
     .replace(/&/g, '&amp;')
@@ -583,7 +609,7 @@ async function sendCertificateEmail({ transporter, org, event, cert, req }) {
   const recipientEmail = String(cert.recipient_email || '').trim();
   const verifyUrl = `${getBaseUrl(req)}/certvault/verify?id=${encodeURIComponent(cert.certificate_id)}`;
   console.log(`[CertVault] Email send start ${cert.certificate_id} -> ${recipientEmail}`);
-  const pdfBuffer = await fetchPdfBuffer(cert.pdf_url);
+  const pdfBuffer = await fetchPdfBufferForEmail(cert.pdf_url);
   const brandLine = 'CertVault, a GradeX product';
   const issuedByLine = `Issued by ${org.name} through ${brandLine}`;
   const previewUrl = pdfDownloadUrlForEmail(cert.pdf_url, req);
@@ -650,7 +676,7 @@ async function sendCertificateEmailWithBrevo({ org, event, cert, req }) {
   }
 
   const verifyUrl = `${getBaseUrl(req)}/certvault/verify?id=${encodeURIComponent(cert.certificate_id)}`;
-  const pdfBuffer = await fetchPdfBuffer(cert.pdf_url);
+  const pdfBuffer = await fetchPdfBufferForEmail(cert.pdf_url);
   const brandLine = 'CertVault, a GradeX product';
   const issuedByLine = `Issued by ${org.name} through ${brandLine}`;
   const controller = new AbortController();

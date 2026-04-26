@@ -56,6 +56,8 @@ const SMTP_SOCKET_TIMEOUT_MS = Math.max(1000, Number.parseInt(process.env.CERTVA
 const BREVO_SEND_TIMEOUT_MS = Math.max(1000, Number.parseInt(process.env.CERTVAULT_BREVO_TIMEOUT_MS || '20000', 10) || 20000);
 const BREVO_API_KEY = process.env.BREVO_API_KEY?.trim() || '';
 const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
+const RESEND_API_KEY = process.env.RESEND_API_KEY?.trim() || '';
+const RESEND_API_URL = 'https://api.resend.com/emails';
 const PASSWORD_HASH_PREFIX = 'scrypt';
 const WEBAUTHN_CHALLENGE_TTL_MS = 5 * 60 * 1000;
 const WEBAUTHN_RP_NAME = process.env.WEBAUTHN_RP_NAME?.trim() || 'VentArc CertVault';
@@ -540,7 +542,9 @@ function createOrgTransporter(org, override = {}) {
 }
 
 function getMailerProvider() {
-  return BREVO_API_KEY ? 'brevo' : 'gmail';
+  if (RESEND_API_KEY) return 'resend';
+  if (BREVO_API_KEY) return 'brevo';
+  return 'gmail';
 }
 
 async function fetchPdfBuffer(url) {
@@ -689,6 +693,66 @@ ${issuedByLine}`,
   });
   console.log(`[CertVault] Email send success ${cert.certificate_id} -> ${recipientEmail}`);
   return info;
+}
+
+async function sendCertificateEmailWithResend({ org, event, cert, req, pdfBuffer: prefetchedBuffer }) {
+  const fromAddress = String(org.mailer_email || '').trim();
+  const fromName = String(org.mailer_from_name || org.name || 'CertVault').trim();
+  const recipientEmail = String(cert.recipient_email || '').trim();
+  if (!fromAddress || !isValidEmail(fromAddress)) throw new Error('Configure a valid sender email before sending');
+  if (!recipientEmail || !isValidEmail(recipientEmail)) throw new Error('Recipient email is invalid');
+
+  const verifyUrl = `${getBaseUrl(req)}/certvault/verify?id=${encodeURIComponent(cert.certificate_id)}`;
+  const pdfBuffer = prefetchedBuffer || await fetchPdfBufferForEmail(cert.pdf_url);
+  const brandLine = 'CertVault, a GradeX product';
+  const issuedByLine = `Issued by ${org.name} through ${brandLine}`;
+  console.log(`[CertVault] Email send start ${cert.certificate_id} -> ${recipientEmail}`);
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30000);
+  let response;
+  try {
+    response = await fetch(RESEND_API_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      signal: controller.signal,
+      body: JSON.stringify({
+        from: `${fromName} <${fromAddress}>`,
+        to: [recipientEmail],
+        subject: `${event.name} Certificate for ${cert.recipient_name}`,
+        html: `
+          <div style="font-family:Arial,sans-serif;color:#111827;line-height:1.6;">
+            <p style="font-size:12px;letter-spacing:0.18em;text-transform:uppercase;color:#2563eb;font-weight:700;">${brandLine}</p>
+            <p>Hi ${escapeHtml(cert.recipient_name)},</p>
+            <p>Your certificate for <strong>${escapeHtml(event.name)}</strong> is attached as a PDF.</p>
+            <p>Certificate ID: <strong>${escapeHtml(cert.certificate_id)}</strong></p>
+            <p><a href="${verifyUrl}">Verify Certificate</a></p>
+            <p><strong>${brandLine}</strong><br>${issuedByLine}</p>
+          </div>
+        `,
+        text: `Hi ${cert.recipient_name},\n\nYour certificate for ${event.name} is attached.\n\nCertificate ID: ${cert.certificate_id}\nVerify: ${verifyUrl}\n\n${brandLine}\n${issuedByLine}`,
+        attachments: [
+          {
+            filename: `${cert.certificate_id}.pdf`,
+            content: pdfBuffer.toString('base64'),
+          },
+        ],
+      }),
+    });
+  } catch (error) {
+    if (error?.name === 'AbortError') throw new Error('Resend send timed out after 30s');
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.message || data.name || `Resend failed with HTTP ${response.status}`);
+  console.log(`[CertVault] Email send success ${cert.certificate_id} -> ${recipientEmail}`);
+  return { messageId: data.id || '' };
 }
 
 async function sendCertificateEmailWithBrevo({ org, event, cert, req, pdfBuffer: prefetchedBuffer }) {
@@ -1943,9 +2007,11 @@ export default async function handler(req, res) {
           continue;
         }
         try {
-          const info = mailerProvider === 'brevo'
-            ? await sendCertificateEmailWithBrevo({ org: effectiveOrg, event, cert, req, pdfBuffer: prefetchedBuffer })
-            : await sendCertificateEmail({ transporter, org: effectiveOrg, event, cert, req, pdfBuffer: prefetchedBuffer });
+          const info = mailerProvider === 'resend'
+            ? await sendCertificateEmailWithResend({ org: effectiveOrg, event, cert, req, pdfBuffer: prefetchedBuffer })
+            : mailerProvider === 'brevo'
+              ? await sendCertificateEmailWithBrevo({ org: effectiveOrg, event, cert, req, pdfBuffer: prefetchedBuffer })
+              : await sendCertificateEmail({ transporter, org: effectiveOrg, event, cert, req, pdfBuffer: prefetchedBuffer });
           await updateEmailDeliveryCompat(convex, {
             certificate_id: cert.certificate_id,
             email_send_status: 'sent',

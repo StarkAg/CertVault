@@ -46,6 +46,9 @@ import {
 // Certificate generator service URL (Flask service on same server)
 const CERTGEN_SERVICE_URL = process.env.CERTGEN_SERVICE_URL?.trim() || '';
 const GMAIL_SEND_DELAY_MS = Math.max(0, Number.parseInt(process.env.GMAIL_SEND_DELAY_MS || '3000', 10) || 3000);
+const SMTP_HOST = process.env.SMTP_HOST?.trim() || 'smtp.gmail.com';
+const SMTP_PORT = Number.parseInt(process.env.SMTP_PORT || '465', 10) || 465;
+const SMTP_SECURE = process.env.SMTP_SECURE !== 'false';
 const PDF_FETCH_TIMEOUT_MS = Math.max(1000, Number.parseInt(process.env.CERTVAULT_PDF_FETCH_TIMEOUT_MS || '15000', 10) || 15000);
 const SMTP_CONNECTION_TIMEOUT_MS = Math.max(1000, Number.parseInt(process.env.CERTVAULT_SMTP_CONNECTION_TIMEOUT_MS || '15000', 10) || 15000);
 const SMTP_GREETING_TIMEOUT_MS = Math.max(1000, Number.parseInt(process.env.CERTVAULT_SMTP_GREETING_TIMEOUT_MS || '15000', 10) || 15000);
@@ -526,10 +529,9 @@ function createOrgTransporter(org, override = {}) {
     throw new Error('Configure the Gmail sender email and app password first');
   }
   return nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false,
-    requireTLS: true,
+    host: SMTP_HOST,
+    port: SMTP_PORT,
+    secure: SMTP_SECURE,
     auth: { user, pass },
     connectionTimeout: SMTP_CONNECTION_TIMEOUT_MS,
     greetingTimeout: SMTP_GREETING_TIMEOUT_MS,

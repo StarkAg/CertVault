@@ -572,6 +572,31 @@ function cloudinaryPublicIdFromUrl(url) {
 }
 
 async function fetchPdfBufferForEmail(pdfUrl) {
+  // Try certgen /download-pdf first — it uses Cloudinary SDK auth, bypassing free-tier delivery blocks
+  if (CERTGEN_SERVICE_URL && pdfUrl && pdfUrl.includes('res.cloudinary.com')) {
+    const publicId = cloudinaryPublicIdFromUrl(pdfUrl);
+    if (publicId) {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), PDF_FETCH_TIMEOUT_MS);
+        const res = await fetch(`${CERTGEN_SERVICE_URL}/download-pdf`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ public_id: publicId }),
+          signal: controller.signal,
+        });
+        clearTimeout(timeout);
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.success && data.pdf_data) {
+          return Buffer.from(data.pdf_data, 'base64');
+        }
+        console.warn('[CertVault] certgen /download-pdf failed:', data.error || `HTTP ${res.status}`);
+      } catch (err) {
+        console.warn('[CertVault] certgen /download-pdf error:', err.message);
+      }
+    }
+  }
+  // Fallback: try signed Cloudinary URL
   if (isCloudinaryConfigured() && pdfUrl && pdfUrl.includes('res.cloudinary.com')) {
     const publicId = cloudinaryPublicIdFromUrl(pdfUrl);
     if (publicId) {
@@ -603,13 +628,13 @@ function pdfDownloadUrlForEmail(url, req) {
   return url;
 }
 
-async function sendCertificateEmail({ transporter, org, event, cert, req }) {
+async function sendCertificateEmail({ transporter, org, event, cert, req, pdfBuffer: prefetchedBuffer }) {
   const fromAddress = String(org.mailer_email || '').trim();
   const fromName = String(org.mailer_from_name || org.name || 'CertVault').trim();
   const recipientEmail = String(cert.recipient_email || '').trim();
   const verifyUrl = `${getBaseUrl(req)}/certvault/verify?id=${encodeURIComponent(cert.certificate_id)}`;
   console.log(`[CertVault] Email send start ${cert.certificate_id} -> ${recipientEmail}`);
-  const pdfBuffer = await fetchPdfBufferForEmail(cert.pdf_url);
+  const pdfBuffer = prefetchedBuffer || await fetchPdfBufferForEmail(cert.pdf_url);
   const brandLine = 'CertVault, a GradeX product';
   const issuedByLine = `Issued by ${org.name} through ${brandLine}`;
   const previewUrl = pdfDownloadUrlForEmail(cert.pdf_url, req);
@@ -664,7 +689,7 @@ ${issuedByLine}`,
   return info;
 }
 
-async function sendCertificateEmailWithBrevo({ org, event, cert, req }) {
+async function sendCertificateEmailWithBrevo({ org, event, cert, req, pdfBuffer: prefetchedBuffer }) {
   const fromAddress = String(org.mailer_email || '').trim();
   const fromName = String(org.mailer_from_name || org.name || 'CertVault').trim();
   const recipientEmail = String(cert.recipient_email || '').trim();
@@ -676,7 +701,7 @@ async function sendCertificateEmailWithBrevo({ org, event, cert, req }) {
   }
 
   const verifyUrl = `${getBaseUrl(req)}/certvault/verify?id=${encodeURIComponent(cert.certificate_id)}`;
-  const pdfBuffer = await fetchPdfBufferForEmail(cert.pdf_url);
+  const pdfBuffer = prefetchedBuffer || await fetchPdfBufferForEmail(cert.pdf_url);
   const brandLine = 'CertVault, a GradeX product';
   const issuedByLine = `Issued by ${org.name} through ${brandLine}`;
   const controller = new AbortController();
@@ -1867,6 +1892,18 @@ export default async function handler(req, res) {
         });
       }
 
+      // Prefetch all PDF buffers in parallel before sending (avoids serial fetch delays)
+      const pdfBufferMap = new Map();
+      await Promise.all(eligible.map(async (cert) => {
+        try {
+          const buf = await fetchPdfBufferForEmail(cert.pdf_url);
+          pdfBufferMap.set(cert.certificate_id, buf);
+        } catch (err) {
+          console.warn(`[CertVault] PDF prefetch failed for ${cert.certificate_id}:`, err.message);
+          pdfBufferMap.set(cert.certificate_id, err);
+        }
+      }));
+
       let limitReached = false;
       for (let index = 0; index < eligible.length; index += 1) {
         const cert = eligible[index];
@@ -1880,10 +1917,33 @@ export default async function handler(req, res) {
           certificate_id: cert.certificate_id,
           email: cert.recipient_email,
         });
+        const prefetchedBuffer = pdfBufferMap.get(cert.certificate_id);
+        if (prefetchedBuffer instanceof Error) {
+          const fetchErr = prefetchedBuffer;
+          console.error(`[CertVault] Email send failed ${cert.certificate_id} -> ${cert.recipient_email}: PDF prefetch error: ${fetchErr.message}`);
+          await updateEmailDeliveryCompat(convex, {
+            certificate_id: cert.certificate_id,
+            email_send_status: 'failed',
+            email_last_error: `PDF fetch failed: ${fetchErr.message}`,
+          });
+          failed.push({ certificate_id: cert.certificate_id, email: cert.recipient_email, error: `PDF fetch failed: ${fetchErr.message}` });
+          writeProgress({
+            type: 'progress',
+            phase: 'failed',
+            current: index + 1,
+            total: eligible.length,
+            sent: sent.length,
+            failed: failed.length,
+            certificate_id: cert.certificate_id,
+            email: cert.recipient_email,
+            error: `PDF fetch failed: ${fetchErr.message}`,
+          });
+          continue;
+        }
         try {
           const info = mailerProvider === 'brevo'
-            ? await sendCertificateEmailWithBrevo({ org: effectiveOrg, event, cert, req })
-            : await sendCertificateEmail({ transporter, org: effectiveOrg, event, cert, req });
+            ? await sendCertificateEmailWithBrevo({ org: effectiveOrg, event, cert, req, pdfBuffer: prefetchedBuffer })
+            : await sendCertificateEmail({ transporter, org: effectiveOrg, event, cert, req, pdfBuffer: prefetchedBuffer });
           await updateEmailDeliveryCompat(convex, {
             certificate_id: cert.certificate_id,
             email_send_status: 'sent',

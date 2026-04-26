@@ -41,6 +41,7 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.utils import ImageReader
 import cloudinary
 import cloudinary.uploader
+import cloudinary.utils
 
 app = Flask(__name__)
 CORS(app)
@@ -412,6 +413,42 @@ def upload_to_cloudinary(pdf_bytes, public_id, folder="certvault"):
         access_control=[{"access_type": "anonymous"}],
     )
     return {'secure_url': result.get('secure_url'), 'public_id': result.get('public_id')}
+
+
+@app.route('/download-pdf', methods=['POST'])
+def download_pdf():
+    """Download a PDF from Cloudinary using authenticated SDK (bypasses free-tier delivery restrictions)."""
+    try:
+        data = request.json or {}
+        public_id = data.get('public_id', '').strip()
+        pdf_url = data.get('pdf_url', '').strip()
+        if not public_id and not pdf_url:
+            return jsonify({'success': False, 'error': 'public_id or pdf_url is required'}), 400
+
+        import urllib.request
+        import urllib.error
+
+        if public_id:
+            # Generate authenticated download URL via SDK
+            signed_url = cloudinary.utils.cloudinary_url(
+                public_id,
+                resource_type='raw',
+                type='upload',
+                sign_url=True,
+            )[0]
+        else:
+            signed_url = pdf_url
+
+        req = urllib.request.Request(signed_url, headers={'User-Agent': 'CertGen/1.0'})
+        with urllib.request.urlopen(req, timeout=30) as response:
+            pdf_bytes = response.read()
+
+        pdf_b64 = base64.b64encode(pdf_bytes).decode('utf-8')
+        return jsonify({'success': True, 'pdf_data': pdf_b64, 'size': len(pdf_bytes)})
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @app.route('/health', methods=['GET'])
